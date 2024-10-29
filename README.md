@@ -5,5 +5,7 @@ details.
 
 ### Authors
 
+ - Carolina Pereira (A100836)
+ - Diogo Costa (A100751)
  - Humberto Gomes (A104348)
  - Sara Lopes (A104179)
