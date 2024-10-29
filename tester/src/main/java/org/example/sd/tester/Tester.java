@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
-}
+package org.example.sd.tester;
 
-rootProject.name = "SD"
-include("server", "client", "common", "tester")
+import org.example.sd.common.Common;
+
+public class Tester {
+    public static void main(String[] args) {
+        System.out.println(Common.TESTER_MESSAGE);
+    }
+}

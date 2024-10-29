@@ -15,8 +15,25 @@
  */
 
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+    java
+    application
 }
 
-rootProject.name = "SD"
-include("server", "client", "common", "tester")
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation(project(":common"))
+    runtimeOnly(project(":server"))
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+application {
+    mainClass = "org.example.sd.tester.Tester"
+}

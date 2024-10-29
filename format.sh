@@ -34,6 +34,7 @@ trap 'trap - EXIT; rm -rf "$formatted_dir" "$diff_file"; exit' EXIT TERM INT HUP
 SOURCE_DIRS="client/src/main/java/org/example/sd/client"
 SOURCE_DIRS="$SOURCE_DIRS server/src/main/java/org/example/sd/server"
 SOURCE_DIRS="$SOURCE_DIRS common/src/main/java/org/example/sd/common"
+SOURCE_DIRS="$SOURCE_DIRS tester/src/main/java/org/example/sd/tester"
 for source_dir in $SOURCE_DIRS; do
     find "$source_dir" -type f | while IFS= read -r file; do
         mkdir -p "$(dirname "$formatted_dir/$file")"
