@@ -13,18 +13,15 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-            # clang-format doesn't come with act's local images.
             - run: >-
-                   if [ -n "$ACT" ]; then
-                       apt update                                             &&
-                       apt install wget                                       &&
-                       wget https://apt.llvm.org/llvm.sh                      &&
-                       chmod +x llvm.sh                                       &&
-                       ./llvm.sh 17                                           &&
-                       apt -y install clang-format-17                         &&
-                       ln -s "$(which clang-format-17)" /usr/bin/clang-format
-                   fi
-            - run: clang-format-17 --version
+                   sudo apt update                                                   &&
+                   sudo apt install wget                                             &&
+                   wget https://apt.llvm.org/llvm.sh                                 &&
+                   chmod a+x llvm.sh                                                 &&
+                   sudo ./llvm.sh 17                                                 &&
+                   (sudo rm /usr/bin/clang-format || exit 0)                         &&
+                   sudo apt -y install clang-format-17                               &&
+                   sudo ln -sf "$(command -v clang-format-17)" /usr/bin/clang-format
             - run: ./format.sh --check
 
     build:
