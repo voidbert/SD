@@ -49,6 +49,7 @@ if ! [ -s "$diff_file" ]; then
     exit 0
 elif [ "$1" = "--check" ]; then
     echo "Formatting errors!" >&2
+    cat "$diff_file"
     exit 1
 else
     less -R "$diff_file"
