@@ -24,6 +24,9 @@ repositories {
 }
 
 dependencies {
+    implementation("org.apache.commons:commons-lang3:3.17.0")
+    implementation("org.apache.commons:commons-math3:3.6.1")
+
     implementation(project(":common"))
     runtimeOnly(project(":server"))
 }
