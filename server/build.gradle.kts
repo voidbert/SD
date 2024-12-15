@@ -25,6 +25,7 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
+    implementation(project(":libserver"))
 }
 
 java {

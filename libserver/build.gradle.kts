@@ -15,8 +15,20 @@
  */
 
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+    java
+    `java-library`
 }
 
-rootProject.name = "SD"
-include("server", "libserver", "client", "common", "tester")
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation(project(":common"))
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
