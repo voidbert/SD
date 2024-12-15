@@ -25,4 +25,6 @@ public interface KeyValueDB {
     public void                multiPut(Map<String, byte[]> pairs);
     public Map<String, byte[]> multiGet(Set<String> keys);
     public byte[]              getWhen(String key, String keyCond, byte[] valueCond);
+
+    public Object clone();
 }
