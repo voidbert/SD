@@ -16,39 +16,16 @@
 
 package org.example.sd.tester;
 
-import org.example.sd.common.KeyValueDB;
-
-import org.apache.commons.math3.distribution.AbstractIntegerDistribution;
-import org.apache.commons.math3.distribution.UniformIntegerDistribution;
-import org.apache.commons.math3.distribution.ZipfDistribution;
+import java.io.IOException;
 
 public class Tester {
-    public static void main(String[] args) {
-        // TODO - make configurable
+    public static void main(String[] args) throws IOException {
+        if (args.length != 1) {
+            System.err.println("Usage: gradle :tester:run --args <output_directory>");
+            System.exit(1);
+        }
 
-        KeyValueDB        empty     = null; // TODO - use actual database when merged
-        DatabasePopulator populator = new DatabasePopulator(empty, 128, 128, 8, 8);
-
-        OperationDistribution operationDistribution =
-            new OperationDistribution(0.4, 0.39, 0.1, 0.10, 0.01);
-        AbstractIntegerDistribution keyDistribution = new ZipfDistribution(populator.getNKeys(), 1);
-        AbstractIntegerDistribution valueDistribution =
-            new ZipfDistribution(populator.getNValues(), 1);
-        AbstractIntegerDistribution multiCountDistribution = new UniformIntegerDistribution(1, 2);
-
-        int nThreads            = 8;
-        int nOperations         = 10_000_000;
-        int nOperationBlockSize = 10000;
-
-        Test test = new Test(populator,
-                             operationDistribution,
-                             keyDistribution,
-                             valueDistribution,
-                             multiCountDistribution,
-                             nThreads,
-                             nOperations,
-                             nOperationBlockSize);
-
-        System.out.println(test.run());
+        TestSuite suite = new TestSuite(args[0]);
+        suite.run();
     }
 }
