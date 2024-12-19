@@ -35,4 +35,16 @@
 
 \maketitle
 
+\begin{abstract}
+    O trabalho prático proposto consiste no desenvolvimento de uma base de dados que armazena, em
+    memória, associações chave-valor. A base de dados é gerida por um servidor, que serve pedidos de
+    clientes comunicados via TCP/IP, garantido a atomicidade das suas execuções. Desenvolveu-se uma
+    solução concorrente, utilizando primitivas de sincronização baseadas em monitores. Procurou-se
+    diminuir a contenção e minimizar o número de \emph{threads} acordadas, pelo que se implementaram
+    diversas estratégias de controlo de concorrência, procurando-se aumentar o desempenho do
+    \emph{software} sem sacrificar a sua correção. O desempenho destas várias estratégias foi
+    medido com recurso a uma ferramenta de testes também desenvolvida, e os resultados dos
+    \emph{benchmarks} realizados apresentam-se neste relatório.
+\end{abstract}
+
 \end{document}
