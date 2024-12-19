@@ -14,30 +14,6 @@
  * limitations under the License.
  */
 
-plugins {
-    java
-    application
-}
+package org.example.sd.tester;
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation("org.apache.commons:commons-lang3:3.17.0")
-    implementation("org.apache.commons:commons-math3:3.6.1")
-
-    implementation(project(":common"))
-    implementation(project(":libserver"))
-    runtimeOnly(project(":server"))
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-application {
-    mainClass = "org.example.sd.tester.Tester"
-}
+public enum Operation { PUT, GET, MULTI_PUT, MULTI_GET, GET_WHEN }
