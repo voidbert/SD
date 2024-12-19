@@ -28,6 +28,9 @@
 
 \begin{document}
 
+% Use rsvg-convert instead of direct EPS to get font embedding
+\immediate\write18{neato -Tsvg dot/Architecture.dot | rsvg-convert -f eps -o dot/Architecture.eps -}
+
 \onehalfspacing
 \setlength{\parskip}{\baselineskip}
 \setlength{\parindent}{0pt}
@@ -46,5 +49,44 @@
     medido com recurso a uma ferramenta de testes também desenvolvida, e os resultados dos
     \emph{benchmarks} realizados apresentam-se neste relatório.
 \end{abstract}
+
+\section{Arquitetura do programa}
+
+O \emph{software} desenvolvido foi dividido em componentes, que se apresentam na figura abaixo,
+juntamente com as dependências entre si:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{dot/Architecture.eps}
+    \caption{Dependências entre os vários componentes da solução desenvolvida.}
+    \label{architecture}
+\end{figure}
+
+A maioria da funcionalidade do \emph{software} está localizada nas bibliotecas \texttt{common} e
+\texttt{libserver}:
+
+\begin{itemize}
+    \item \texttt{common}
+    \begin{itemize}
+        \item Mensagens do protocolo de comunicação entre \texttt{client} e \texttt{server}, e a sua
+            serialização e deserialização;
+
+        \item Lógica de comunicação do cliente.
+    \end{itemize}
+
+    \item \texttt{libserver}
+    \begin{itemize}
+        \item Várias implementações da estrutura de armazenamento de dados (\emph{backends}), com
+            estratégias de controlo de concorrência distintas.
+
+        \item Lógica de comunicação do servidor.
+    \end{itemize}
+\end{itemize}
+
+Os programas \texttt{client} e \texttt{server} não passam de \emph{wrappers} à volta das bibliotecas
+\texttt{common} e \texttt{libserver}, respetivamente. Por outro lado, no programa \texttt{tester}, é
+implementada uma \emph{framework} para \emph{benchmarking} tanto dos \emph{backends} em
+\texttt{libserver} como da base de dados completa, incluindo comunicação entre \texttt{client} e
+\texttt{server}.
 
 \end{document}

@@ -1,2 +1,7 @@
+# Java
 .gradle
 build
+
+# LaTeX
+report/dot/*.eps
+*-eps-converted-to.pdf
