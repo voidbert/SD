@@ -1,7 +1,9 @@
 \documentclass[12pt, a4paper, titlepage]{article}
 
+\usepackage{array}
 \usepackage[portuguese]{babel}
 \usepackage{caption}
+\usepackage{cite}
 \usepackage{float}
 \usepackage[a4paper, margin=2cm]{geometry}
 \usepackage{graphicx}
@@ -103,8 +105,134 @@ implementada uma \emph{framework} para \emph{benchmarking} tanto dos \emph{backe
 
 \section{Protocolo de comunicação entre \texttt{client} e \texttt{server}}
 
-\section{Sistema de testes}
+\pagebreak % TODO - remover depois de escrever parte anterior
+\section{\emph{Framework} de testes}
+
+\subsection{Funcionalidade e implementação}
+
+Foi desenvolvida uma \emph{framework} para testes de desempenho da base de dados. Um teste de
+desempenho começa com a criação de uma base de dados e um povoamento inicial. Depois, são criadas
+várias \emph{threads}, e cada uma gera operações de leitura e escrita aleatoriamente, executando-as
+e medindo o tempo de execução de cada uma. Estes tempos são utilizados para o cálculo da média e do
+desvio padrão do tempo de execução de cada tipo de operação. Quando o conjunto de \emph{threads}
+completa um número predeterminado de operações, o teste termina.
+
+Para dividir as operações a executar pelas várias \emph{threads}, cada \emph{thread}
+responsabiliza-se pela execução de $N$ operações (um bloco de operações) incrementando em $N$ um
+inteiro partilhado, que conta o número total de operações atribuídas a \emph{threads}. Após terminar
+a geração e execução das $N$ operações, a \emph{thread} volta a assumir a responsabilidade por um
+novo bloco do mesmo tamanho, e assim sucessivamente, até o número de operações pedido ter sido
+executado. Estes acessos concorrentes ao contador de operações poderiam ter sido controlados com a
+aquisição e libertação de um \emph{lock} em torno das atualizações da variável. No entanto, para um
+melhor desempenho e com a permissão do regente da UC, um inteiro de atualização atómica foi
+utilizado.
+
+Outro problema relaciona-se com a operação \texttt{getWhen}. Esta operação bloqueia até uma condição
+se verificar na base de dados. É possível que todas as \emph{threads} bloqueiem, e não haja nenhuma
+\emph{thread} disponível para desbloquear as \emph{threads} bloqueadas. Para resolver este problema,
+é criada uma \emph{thread} no início de cada teste, responsável por desbloquear \emph{threads}
+bloqueadas em operações \texttt{getWhen}. Antes de uma \emph{thread} executar uma operação
+\texttt{getWhen}, atualiza (atomicamente) uma variável que armazena a condição na qual a
+\emph{thread} irá bloquear. A \emph{thread} de desbloqueio itera constantemente por estas condições,
+atualizando a base de dados de modo a desbloquear outras \emph{threads}.
+
+Para resolver este problema, foi considerada outra possibilidade menos computacionalmente intensiva.
+Esta consiste na existência de uma (ou várias) \emph{threads} responsáveis pela geração das
+operações, que garantem que todas as operações \texttt{getWhen} são correspondidas por uma operação
+de escrita posterior que desbloqueia a \emph{thread} a executar o \texttt{getWhen}. No entanto, esta
+estratégia não só é de implementação consideravelmente mais complexa do que a utilizada, como pode
+exigir o uso de blocos muito pequenos para assegurar que uma dada fração das operações sejam do tipo
+\texttt{getWhen}, aumentando o \emph{overhead} do controlo de concorrência, e possivelmente
+impedindo a \emph{framework} de testes de medir o desempenho máximo de uma implementação da base de
+dados.
+
+Independentemente de qual a estratégia de controlo de operações \texttt{getWhen} utilizada, não faz
+sentido que a \emph{framework} de testes meça o tempo médio de execução de operações
+\texttt{getWhen}, visto que este está altamente dependente de quando a \emph{thread} de desbloqueio
+é escalonada, refletindo fracamente o desempenho da base de dados.
+
+A \emph{framework} de testes é altamente configurável, sendo longa a lista de parâmetros
+configuráveis. Esta pode ser consultada na tabela \ref{benckmark-description}.
+
+Por último, foram três as bibliotecas utilizadas para auxiliar o desenvolvimento da \emph{framework}
+de testes. Para implementações de distribuições numéricas (uniforme, Zipf, \ldots), a biblioteca
+Apache Commons Math \cite{apache-commons-math} foi utilizada, e as bibliotecas JFreeChart
+\cite{jfreechart} e Apache XML Graphics \cite{apache-xml-graphics} foram utilizadas para a geração
+automática dos gráficos apresentados neste documento.
+
+\subsection{Metodologia de testagem}
+
+Procurou-se testar o desempenho da base de dados desenvolvida em diversos cenários. Para isso, foram
+concebidos diferentes \emph{benchmarks}, com as características que se apresentam abaixo:
+
+\begin{table}[H]
+    \begin{center}
+        \begin{tabular}{|p{5cm}|c|c|c|}
+            \hline & Maioriariamente leituras & Equilibrado & Equilibrado c/ \texttt{getWhen} \\
+
+            \hline Número de chaves         & \multicolumn{3}{c|}{128}          \\
+            \hline Número de valores        & \multicolumn{3}{c|}{128}          \\
+            \hline Comprimento de uma chave & \multicolumn{3}{c|}{8 caracteres} \\
+            \hline Comprimento de um valor  & \multicolumn{3}{c|}{8 octetos}    \\
+
+            \hline Percentagem de \texttt{put}s      & 5  & 25 & 25 \\
+            \hline Percentagem de \texttt{get}s      & 70 & 25 & 20 \\
+            \hline Percentagem de \texttt{multiPut}s & 0  & 25 & 25 \\
+            \hline Percentagem de \texttt{multiGet}s & 25 & 25 & 25 \\
+            \hline Percentagem de \texttt{getWhen}s  & 0  & 0  & 5  \\
+
+            \hline Distribuição de chaves  & \multicolumn{3}{c|}{Uniforme} \\
+            \hline Distribuição de valores & \multicolumn{3}{c|}{Uniforme} \\
+            \hline Distribuição de número de chaves em operações multi &
+                \multicolumn{3}{c|}{Uniforme entre 2 e 4, inclusive} \\
+
+            \hline Número de operações & \multicolumn{2}{c|}{8 milhões} & 1 milhão \\
+            \hline Tamanho de um bloco & \multicolumn{3}{c|}{4096} \\
+            \hline
+        \end{tabular}
+    \end{center}
+
+    \caption{Descrição dos \emph{benchmarks} concebidos.}
+    \label{benckmark-description}
+\end{table}
+
+Os testes de desempenho foram executados num computador com as seguintes especificações:
+
+\begin{table}[H]
+    \begin{center}
+        \begin{tabular}{|c|c|}
+            \hline Processador       & Intel Core i3-7100 3.9 GHz  \\
+            \hline Memória           & 8 GiB DDR4 2400 MT/s        \\
+            \hline Sistema Operativo & Linux 6.11.5                \\
+            \hline JRE               & OpenJDK 21.0.5              \\
+            \hline
+        \end{tabular}
+    \end{center}
+
+    \caption{\emph{Hardware} e \emph{software} utilizador para a execução dos \emph{benchmarks}.}
+    \label{hardware-software}
+\end{table}
+
+\subsection{Resultados dos testes}
 
 \section{Conclusão}
+
+\section{Bibliografia}
+\def\refname{}
+\vspace{-1.5cm}
+\begin{thebibliography}{9}
+    \bibitem{apache-commons-math}
+        The Apache Software Foundation. "Commons Math: The Apache Commons Mathematics Library."{},
+        Apache Commons. Accessed: Dec. 20, 2024. [Online.] Available:
+        \url{https://commons.apache.org/proper/commons-math/}
+
+    \bibitem{jfreechart}
+        D. Gilbert. "Welcome To JFreeChart!."{}, JFreeChart. Accessed: Dec. 20, 2024. [Online.]
+        Available: \url{https://www.jfree.org/jfreechart/}
+
+    \bibitem{apache-xml-graphics}
+        The Apache Software Foundation. "Apache FOP."{} The Apache XML Graphics Project. Accessed:
+        Dec. 20, 2024. [Online.] Available: \url{https://xmlgraphics.apache.org/fop/}
+\end{thebibliography}
 
 \end{document}
