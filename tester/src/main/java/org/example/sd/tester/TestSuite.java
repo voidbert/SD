@@ -29,7 +29,6 @@ import org.example.sd.libserver.SimpleHashMapBackend;
 
 import org.apache.commons.math3.distribution.AbstractIntegerDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
-import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.xmlgraphics.java2d.GraphicContext;
 import org.apache.xmlgraphics.java2d.ps.EPSDocumentGraphics2D;
 import org.jfree.chart.ChartFactory;
@@ -41,7 +40,7 @@ public class TestSuite {
     private final static int[] threadCounts = new int[] { 1, 2, 4, 8, 16 };
     private final static Map<String, OperationDistribution> operationDistributions = Map.ofEntries(
         Map.entry("Maioritariamente leituras",
-                  new OperationDistribution(0.05, 0.70, 0.25, 0.0, 0.0)),
+                  new OperationDistribution(0.05, 0.70, 0.0, 0.25, 0.0)),
         Map.entry("Equilibrado", new OperationDistribution(0.25, 0.25, 0.25, 0.25, 0.0)),
         Map.entry("Equilibrado com getWhen",
                   new OperationDistribution(0.25, 0.20, 0.25, 0.25, 0.05)));
@@ -88,10 +87,14 @@ public class TestSuite {
         final int nValues            = 128;
         final int keyLength          = 8;
         final int valueLength        = 8;
-        final AbstractIntegerDistribution keyDistribution   = new ZipfDistribution(128, 1);
-        final AbstractIntegerDistribution valueDistribution = new ZipfDistribution(128, 1);
+
+        final AbstractIntegerDistribution keyDistribution =
+            new UniformIntegerDistribution(0, nKeys - 1);
+        final AbstractIntegerDistribution valueDistribution =
+            new UniformIntegerDistribution(0, nValues - 1);
         final AbstractIntegerDistribution multiCountDistribution =
             new UniformIntegerDistribution(2, 4);
+
         final DatabasePopulator populator =
             new DatabasePopulator(backend, nKeys, nValues, keyLength, valueLength);
 
