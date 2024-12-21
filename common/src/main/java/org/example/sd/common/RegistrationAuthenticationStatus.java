@@ -1,4 +1,1 @@
-public enum RegistrationAuthenticationStatus {
-	SUCCESS,
-	WRONG_CREDENTIALS
-}
+public enum RegistrationAuthenticationStatus { SUCCESS, WRONG_CREDENTIALS }

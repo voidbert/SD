@@ -5,22 +5,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MultiGetResponseMessage extends Message {
-    private int requestId;
+    private int                 requestId;
     private Map<String, byte[]> map;
 
     public MultiGetResponseMessage(int requestId, Map<String, byte[]> map) {
         this.requestId = requestId;
-        this.map = map;
+        this.map       = map;
     }
 
     public static MultiGetResponseMessage messageDeserialize(DataInputStream in) {
-        int requestId = in.readInt();
-        int mapSize = in.readInt();
-        Map<String, byte[]> map = new HashMap<>();
+        int                 requestId = in.readInt();
+        int                 mapSize   = in.readInt();
+        Map<String, byte[]> map       = new HashMap<>();
         for (int i = 0; i < mapSize; i++) {
-            String key = in.readUTF();
-            int valueLength = in.readInt();
-            byte[] value = new byte[valueLength];
+            String key         = in.readUTF();
+            int    valueLength = in.readInt();
+            byte[] value       = new byte[valueLength];
             in.readFully(value);
             map.put(key, value);
         }
@@ -47,8 +47,10 @@ public class MultiGetResponseMessage extends Message {
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) return true;
-        if (other == null || getClass() != other.getClass()) return false;
+        if (this == other)
+            return true;
+        if (other == null || getClass() != other.getClass())
+            return false;
         MultiGetResponseMessage that = (MultiGetResponseMessage) other;
         return requestId == that.requestId && map.equals(that.map);
     }
@@ -57,7 +59,7 @@ public class MultiGetResponseMessage extends Message {
     public Object clone() {
         try {
             MultiGetResponseMessage cloned = (MultiGetResponseMessage) super.clone();
-            cloned.map = new HashMap<>(this.map.size());
+            cloned.map                     = new HashMap<>(this.map.size());
             for (Map.Entry<String, byte[]> entry : this.map.entrySet()) {
                 cloned.map.put(entry.getKey(), entry.getValue().clone());
             }
@@ -73,12 +75,12 @@ public class MultiGetResponseMessage extends Message {
         mapString.append("{");
         for (Map.Entry<String, byte[]> entry : map.entrySet()) {
             mapString.append(entry.getKey())
-                     .append("=")
-                     .append(Arrays.toString(entry.getValue()))
-                     .append(", ");
+                .append("=")
+                .append(Arrays.toString(entry.getValue()))
+                .append(", ");
         }
         if (mapString.length() > 1) {
-            mapString.setLength(mapString.length() - 2); 
+            mapString.setLength(mapString.length() - 2);
         }
         mapString.append("}");
 
