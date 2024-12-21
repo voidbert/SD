@@ -18,6 +18,7 @@ package org.example.sd.libserver;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
@@ -34,20 +35,18 @@ public class SimpleHashMapBackend implements KeyValueDB {
 
     private Map<String, byte[]> map;
 
-    boolean     processingTriggers;
-    private int waitingTriggers;
-    private int unsignaledTriggers;
+    private Set<Long> waitingTriggers;
+    private Set<Long> unsignaledTriggers;
 
     public SimpleHashMapBackend() {
-        this.lock                     = new ReentrantReadWriteLock();
+        this.lock                     = new ReentrantReadWriteLock(true);
         this.databaseChangedCondition = this.lock.writeLock().newCondition();
         this.triggersDoneCondition    = this.lock.writeLock().newCondition();
 
         this.map = new HashMap<>();
 
-        this.processingTriggers = false;
-        this.waitingTriggers    = 0;
-        this.unsignaledTriggers = 0;
+        this.waitingTriggers    = new HashSet<Long>();
+        this.unsignaledTriggers = new HashSet<Long>();
     }
 
     public SimpleHashMapBackend(SimpleHashMapBackend database) {
@@ -58,14 +57,13 @@ public class SimpleHashMapBackend implements KeyValueDB {
     public void put(String key, byte[] value) {
         this.lock.writeLock().lock();
         try {
-            while (processingTriggers)
+            while (this.unsignaledTriggers.size() > 0)
                 this.triggersDoneCondition.awaitUninterruptibly();
 
             this.map.put(key, value.clone());
 
-            if (waitingTriggers > 0) {
-                this.processingTriggers = true;
-                this.unsignaledTriggers = this.waitingTriggers;
+            if (this.waitingTriggers.size() > 0) {
+                this.unsignaledTriggers.addAll(this.waitingTriggers);
                 this.databaseChangedCondition.signalAll();
             }
         } finally {
@@ -88,15 +86,14 @@ public class SimpleHashMapBackend implements KeyValueDB {
     public void multiPut(Map<String, byte[]> pairs) {
         this.lock.writeLock().lock();
         try {
-            while (processingTriggers)
+            while (this.unsignaledTriggers.size() > 0)
                 this.triggersDoneCondition.awaitUninterruptibly();
 
             for (Map.Entry<String, byte[]> pair : pairs.entrySet())
                 this.map.put(pair.getKey(), pair.getValue().clone());
 
-            if (waitingTriggers > 0) {
-                this.processingTriggers = true;
-                this.unsignaledTriggers = this.waitingTriggers;
+            if (this.waitingTriggers.size() > 0) {
+                this.unsignaledTriggers.addAll(this.waitingTriggers);
                 this.databaseChangedCondition.signalAll();
             }
         } finally {
@@ -119,21 +116,24 @@ public class SimpleHashMapBackend implements KeyValueDB {
     }
 
     public byte[] getWhen(String key, String keyCond, byte[] valueCond) {
-        this.lock.writeLock().lock(); // Needed for conditions
+        long threadId = Thread.currentThread().getId();
+
+        this.lock.writeLock().lock();
         try {
-            this.waitingTriggers++;
+            this.waitingTriggers.add(threadId);
 
             while (!Arrays.equals(this.map.get(keyCond), valueCond)) {
                 this.databaseChangedCondition.awaitUninterruptibly();
 
-                this.unsignaledTriggers--;
-                if (this.unsignaledTriggers == 0) {
-                    this.processingTriggers = false;
-                    this.triggersDoneCondition.signalAll();
+                if (this.unsignaledTriggers.contains(threadId)) {
+                    this.unsignaledTriggers.remove(threadId);
+
+                    if (this.unsignaledTriggers.size() == 0)
+                        this.triggersDoneCondition.signalAll();
                 }
             }
 
-            this.waitingTriggers--;
+            this.waitingTriggers.remove(threadId);
 
             byte[] value = this.map.get(key);
             if (value != null)
