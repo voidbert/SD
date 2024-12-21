@@ -26,6 +26,8 @@ repositories {
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.17.0")
     implementation("org.apache.commons:commons-math3:3.6.1")
+    implementation("org.jfree:jfreechart:1.5.5")
+    implementation("org.apache.xmlgraphics:fop:2.10")
 
     implementation(project(":common"))
     implementation(project(":libserver"))
