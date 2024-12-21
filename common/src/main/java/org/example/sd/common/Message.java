@@ -55,7 +55,8 @@ public abstract class Message {
 
         try {
             Class<?> messageClass = Class.forName("org.example.sd.common." + messageClassName);
-            Method deserializeMethod = messageClass.getMethod("messageDeserialize", DataInputStream.class);
+            Method   deserializeMethod =
+                messageClass.getMethod("messageDeserialize", DataInputStream.class);
             return (Message) deserializeMethod.invoke(null, in);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
@@ -66,7 +67,7 @@ public abstract class Message {
         Byte typeInteger = Message.classToTypeInteger.get(this.getClass().getSimpleName());
         if (typeInteger == null)
             throw new RuntimeException("Message class not supported");
-        
+
         out.writeByte(typeInteger);
         this.messageSerialize(out);
     }
