@@ -137,11 +137,11 @@ public abstract class SingleLockHashMapBackend implements KeyValueDB {
     }
 
     public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("{");
+
         this.lock.readLock().lock();
         try {
-            StringBuilder builder = new StringBuilder();
-            builder.append("{");
-
             boolean isFirst = true;
             for (Map.Entry<String, byte[]> entry : this.map.entrySet()) {
                 if (isFirst)
@@ -154,11 +154,12 @@ public abstract class SingleLockHashMapBackend implements KeyValueDB {
                 builder.append(Arrays.toString(entry.getValue()));
             }
 
-            builder.append("}");
-            return builder.toString();
         } finally {
             this.lock.readLock().unlock();
         }
+
+        builder.append("}");
+        return builder.toString();
     }
 
     protected abstract void summonTriggersAfterPut(String key, byte[] value);
