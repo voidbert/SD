@@ -18,6 +18,7 @@ package org.example.sd.common;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
 public class GetResponseMessage extends Message {
@@ -26,17 +27,35 @@ public class GetResponseMessage extends Message {
 
     public GetResponseMessage(int requestId, byte[] value) {
         this.requestId = requestId;
-        this.value     = value;
+        this.value     = value.clone();
     }
 
-    public static GetResponseMessage messageDeserialize(DataInputStream in) {
-        int    requestId = in.readInt();
-        byte[] value     = in.readAllBytes();
+    public GetResponseMessage(GetResponseMessage message) {
+        this(message.getRequestId(), message.getValue());
     }
 
-    protected void messageSerialize(DataOutputStream out) {
-        out.writeInt(requestId);
-        out.write(value);
+    public static GetResponseMessage messageDeserialize(DataInputStream in) throws IOException {
+        int requestId = in.readInt();
+
+        byte[] value  = null;
+        int    length = in.readInt();
+        if (length > 0) {
+            value = new byte[length];
+            in.readFully(value);
+        }
+
+        return new GetResponseMessage(requestId, value);
+    }
+
+    protected void messageSerialize(DataOutputStream out) throws IOException {
+        out.writeInt(this.requestId);
+
+        if (this.value == null) {
+            out.writeInt(-1);
+        } else {
+            out.writeInt(this.value.length);
+            out.write(this.value);
+        }
     }
 
     public int getRequestId() {
@@ -44,32 +63,28 @@ public class GetResponseMessage extends Message {
     }
 
     public byte[] getValue() {
-        return this.value;
+        return this.value.clone();
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other)
-            return true;
-        if ((other == null) || (this.getClass() != other.getClass()))
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != this.getClass())
             return false;
-        GetResponseMessage that = (GetResponseMessage) other;
-        return this.requestId == that.requestId && this.value.equals(that.value);
+
+        GetResponseMessage message = (GetResponseMessage) o;
+        return this.requestId == message.getRequestId() &&
+            Arrays.equals(this.value, message.getValue());
     }
 
     @Override
     public Object clone() {
-        try {
-            return super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
+        return new GetResponseMessage(this);
     }
 
     @Override
     public String toString() {
-        String str = "GetResponseMessage(RequestId= %d, Value= %s)";
-        String res = String.format(str, this.requestId, Arrays.toString(this.value));
-        return res;
+        return String.format("GetResponseMessage(requestId=%d, value=%s)",
+                             this.requestId,
+                             Arrays.toString(this.value));
     }
 }

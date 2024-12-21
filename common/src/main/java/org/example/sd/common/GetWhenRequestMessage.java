@@ -18,6 +18,7 @@ package org.example.sd.common;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
 public class GetWhenRequestMessage extends Message {
@@ -30,20 +31,29 @@ public class GetWhenRequestMessage extends Message {
         this.id        = id;
         this.key       = key;
         this.keyCond   = keyCond;
-        this.valueCond = valueCond;
+        this.valueCond = valueCond.clone();
     }
 
-    public static GetWhenRequestMessage messageDeserialize(DataInputStream in) {
-        int    id        = in.readInt();
-        String key       = in.readUTF();
-        String keyCond   = in.readUTF();
-        byte[] valueCond = in.readAllBytes();
+    public GetWhenRequestMessage(GetWhenRequestMessage message) {
+        this(message.getId(), message.getKey(), message.getKeyCond(), message.getValueCond());
     }
 
-    protected void messageSerialize(DataOutputStream out) {
+    public static GetWhenRequestMessage messageDeserialize(DataInputStream in) throws IOException {
+        int    id      = in.readInt();
+        String key     = in.readUTF();
+        String keyCond = in.readUTF();
+
+        byte[] valueCond = new byte[in.readInt()];
+        in.readFully(valueCond);
+
+        return new GetWhenRequestMessage(id, key, keyCond, valueCond);
+    }
+
+    protected void messageSerialize(DataOutputStream out) throws IOException {
         out.writeInt(id);
         out.writeUTF(key);
         out.writeUTF(keyCond);
+        out.writeInt(valueCond.length);
         out.write(valueCond);
     }
 
@@ -60,34 +70,31 @@ public class GetWhenRequestMessage extends Message {
     }
 
     public byte[] getValueCond() {
-        return this.valueCond;
+        return this.valueCond.clone();
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other)
-            return true;
-        if ((other == null) || (this.getClass() != other.getClass()))
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != this.getClass())
             return false;
-        GetWhenRequestMessage that = (GetWhenRequestMessage) other;
-        return this.id == that.id && this.key.equals(that.key) &&
-            this.keyCond.equals(that.keyCond) && this.valueCond.equals(that.valueCond);
+
+        GetWhenRequestMessage message = (GetWhenRequestMessage) o;
+        return this.id == message.getId() && this.key.equals(message.getKey()) &&
+            this.keyCond.equals(message.getKeyCond()) &&
+            Arrays.equals(this.valueCond, message.getValueCond());
     }
 
     @Override
     public Object clone() {
-        try {
-            return super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
+        return new GetWhenRequestMessage(this);
     }
 
     @Override
     public String toString() {
-        String str = "GetWhenRequestMessage(ID= %d, Key= %s, KeyCond= %s, ValueCond= %s)";
-        String res =
-            String.format(str, this.id, this.key, this.keyCond, Arrays.toString(this.valueCond));
-        return res;
+        return String.format("GetWhenRequestMessage(id=%d, key=%s, keyCond=%s, valueCond=%s)",
+                             this.id,
+                             this.key,
+                             this.keyCond,
+                             Arrays.toString(this.valueCond));
     }
 }

@@ -16,4 +16,29 @@
 
 package org.example.sd.common;
 
-public enum RegistrationAuthenticationStatus { SUCCESS, WRONG_CREDENTIALS }
+public enum RegistrationAuthenticationStatus {
+    SUCCESS,
+    WRONG_CREDENTIALS;
+
+    public int toInt() {
+        switch (this) {
+            case SUCCESS:
+                return 0;
+            case WRONG_CREDENTIALS:
+                return 1;
+            default:
+                return -1; // Unreachable
+        }
+    }
+
+    public static RegistrationAuthenticationStatus fromInt(int i) {
+        switch (i) {
+            case 0:
+                return SUCCESS;
+            case 1:
+                return WRONG_CREDENTIALS;
+            default:
+                return null;
+        }
+    }
+}

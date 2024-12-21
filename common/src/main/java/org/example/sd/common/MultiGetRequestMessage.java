@@ -18,6 +18,7 @@ package org.example.sd.common;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -27,25 +28,28 @@ public class MultiGetRequestMessage extends Message {
 
     public MultiGetRequestMessage(int id, Set<String> keys) {
         this.id   = id;
-        this.keys = keys;
+        this.keys = new HashSet(keys);
     }
 
-    public static MultiGetRequestMessage messageDeserialize(DataInputStream in) {
-        int         id       = in.readInt();
-        int         keysSize = in.readInt();
-        Set<String> keys     = new HashSet<>();
-        for (int i = 0; i < keysSize; i++) {
+    public MultiGetRequestMessage(MultiGetRequestMessage message) {
+        this(message.getId(), message.getKeys());
+    }
+
+    public static MultiGetRequestMessage messageDeserialize(DataInputStream in) throws IOException {
+        int         id     = in.readInt();
+        int         length = in.readInt();
+        Set<String> keys   = new HashSet<String>();
+        for (int i = 0; i < length; i++)
             keys.add(in.readUTF());
-        }
+
         return new MultiGetRequestMessage(id, keys);
     }
 
-    protected void messageSerialize(DataOutputStream out) {
+    protected void messageSerialize(DataOutputStream out) throws IOException {
         out.writeInt(id);
         out.writeInt(keys.size());
-        for (String key : keys) {
+        for (String key : keys)
             out.writeUTF(key);
-        }
     }
 
     public int getId() {
@@ -53,32 +57,27 @@ public class MultiGetRequestMessage extends Message {
     }
 
     public Set<String> getKeys() {
-        return this.keys;
+        return new HashSet(keys);
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other)
-            return true;
-        if ((other == null) || (this.getClass() != other.getClass()))
+    public boolean equals(Object o) {
+        if (o == null || this.getClass() != o.getClass())
             return false;
-        MultiGetRequestMessage that = (MultiGetRequestMessage) other;
-        return this.id == that.id && this.keys.equals(that.keys);
+
+        MultiGetRequestMessage message = (MultiGetRequestMessage) o;
+        return this.id == message.getId() && this.keys.equals(message.getKeys());
     }
 
     @Override
     public Object clone() {
-        try {
-            return super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
+        return new MultiGetRequestMessage(this);
     }
 
     @Override
     public String toString() {
-        String str = "MultiGetRequestMessage(ID= %d, Keys= %s)";
-        String res = String.format(str, this.id, this.keys);
-        return res;
+        return String.format("MultiGetRequestMessage(id=%d, keys=%s)",
+                             this.id,
+                             this.keys.toString());
     }
 }

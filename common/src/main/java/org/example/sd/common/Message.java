@@ -16,29 +16,20 @@
 
 package org.example.sd.common;
 
-public abstract class Message {
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
-    /**
-	 *
-	 * @param in
-	 */
-    public static Message deserialize(DataInputStream in) {
+public abstract class Message {
+    public static Message deserialize(DataInputStream in) throws IOException {
         // TODO - implement Message.deserialize
         throw new UnsupportedOperationException();
     }
 
-    /**
-	 *
-	 * @param out
-	 */
-    public void serialize(DataOutputStream out) {
+    public void serialize(DataOutputStream out) throws IOException {
         // TODO - implement Message.serialize
         throw new UnsupportedOperationException();
     }
 
-    /**
-	 *
-	 * @param out
-	 */
-    protected abstract void messageSerialize(DataOutputStream out);
+    protected abstract void messageSerialize(DataOutputStream out) throws IOException;
 }

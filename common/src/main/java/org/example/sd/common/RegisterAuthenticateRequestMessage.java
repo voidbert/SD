@@ -18,22 +18,30 @@ package org.example.sd.common;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 
-public class RegisterAuthenticateRequest extends Message {
+public class RegisterAuthenticateRequestMessage extends Message {
     private String username;
     private String password;
 
-    public void RegisterAuthenticateMessage(String username, String password) {
+    public RegisterAuthenticateRequestMessage(String username, String password) {
         this.username = username;
         this.password = password;
     }
 
-    public static RegisterAuthenticateRequest messageDeserialize(DataInputStream in) {
-        String username = in.readUTF();
-        String password = in.readUTF();
+    public RegisterAuthenticateRequestMessage(RegisterAuthenticateRequestMessage message) {
+        this(message.getUsername(), message.getPassword());
     }
 
-    protected void messageSerialize(DataOutputStream out) {
+    public static RegisterAuthenticateRequestMessage messageDeserialize(DataInputStream in)
+        throws IOException {
+
+        String username = in.readUTF();
+        String password = in.readUTF();
+        return new RegisterAuthenticateRequestMessage(username, password);
+    }
+
+    protected void messageSerialize(DataOutputStream out) throws IOException {
         out.writeUTF(username);
         out.writeUTF(password);
     }
@@ -47,28 +55,24 @@ public class RegisterAuthenticateRequest extends Message {
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other)
-            return true;
-        if ((other == null) || (this.getClass() != other.getClass()))
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != this.getClass())
             return false;
-        RegisterAuthenticateRequest that = (RegisterAuthenticateRequest) other;
-        return this.username.equals(that.username) && this.password.equals(that.password);
+
+        RegisterAuthenticateRequestMessage message = (RegisterAuthenticateRequestMessage) o;
+        return this.username.equals(message.getUsername()) &&
+            this.password.equals(message.getPassword());
     }
 
     @Override
     public Object clone() {
-        try {
-            return super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
+        return new RegisterAuthenticateRequestMessage(this);
     }
 
     @Override
     public String toString() {
-        String str = "RegisterAuthenticateRequest(Username= %s, Password= %s)";
-        String res = String.format(str, this.username, this.password);
-        return res;
+        return String.format("RegisterAuthenticateRequestMessage(username=%s, password=%s)",
+                             this.username,
+                             this.password);
     }
 }

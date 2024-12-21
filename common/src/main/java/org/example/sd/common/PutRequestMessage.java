@@ -18,6 +18,7 @@ package org.example.sd.common;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
 public class PutRequestMessage extends Message {
@@ -28,18 +29,26 @@ public class PutRequestMessage extends Message {
     public PutRequestMessage(int id, String key, byte[] value) {
         this.id    = id;
         this.key   = key;
-        this.value = value;
+        this.value = value.clone();
     }
 
-    public static PutRequestMessage messageDeserialize(DataInputStream in) {
+    public PutRequestMessage(PutRequestMessage message) {
+        this(message.getId(), message.getKey(), message.getValue());
+    }
+
+    public static PutRequestMessage messageDeserialize(DataInputStream in) throws IOException {
         int    id    = in.readInt();
         String key   = in.readUTF();
-        byte[] value = in.readAllBytes();
+        byte[] value = new byte[in.readInt()];
+        in.readFully(value);
+
+        return new PutRequestMessage(id, key, value);
     }
 
-    protected void messageSerialize(DataOutputStream out) {
+    protected void messageSerialize(DataOutputStream out) throws IOException {
         out.writeInt(id);
         out.writeUTF(key);
+        out.writeInt(value.length);
         out.write(value);
     }
 
@@ -52,32 +61,29 @@ public class PutRequestMessage extends Message {
     }
 
     public byte[] getValue() {
-        return this.value;
+        return this.value.clone();
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other)
-            return true;
-        if ((other == null) || (this.getClass() != other.getClass()))
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != this.getClass())
             return false;
-        PutRequestMessage that = (PutRequestMessage) other;
-        return this.id == that.id && this.key.equals(that.key) && this.value.equals(that.value);
+
+        PutRequestMessage message = (PutRequestMessage) o;
+        return this.id == message.getId() && this.key.equals(message.getValue()) &&
+            Arrays.equals(this.value, message.getValue());
     }
 
     @Override
     public Object clone() {
-        try {
-            return super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
+        return new PutRequestMessage(this);
     }
 
     @Override
     public String toString() {
-        String str = "PutRequestMessage(Id= %d, Key= %s, Value= %s)";
-        String res = String.format(str, this.id, this.key, Arrays.toString(this.value));
-        return res;
+        return String.format("PutRequestMessage(id=%d, key=%s, value=%s)",
+                             this.id,
+                             this.key,
+                             Arrays.toString(this.value));
     }
 }

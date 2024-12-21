@@ -18,6 +18,7 @@ package org.example.sd.common;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
 public class PutResponseMessage extends Message {
@@ -26,16 +27,24 @@ public class PutResponseMessage extends Message {
 
     public PutResponseMessage(int requestId, byte[] value) {
         this.requestId = requestId;
-        this.value     = value;
+        this.value     = value.clone();
     }
 
-    public static PutResponseMessage messageDeserialize(DataInputStream in) {
+    public PutResponseMessage(PutResponseMessage message) {
+        this(message.getRequestId(), message.getValue());
+    }
+
+    public static PutResponseMessage messageDeserialize(DataInputStream in) throws IOException {
         int    requestId = in.readInt();
-        byte[] value     = in.readAllBytes();
+        byte[] value     = new byte[in.readInt()];
+        in.readFully(value);
+
+        return new PutResponseMessage(requestId, value);
     }
 
-    protected void messageSerialize(DataOutputStream out) {
+    protected void messageSerialize(DataOutputStream out) throws IOException {
         out.writeInt(requestId);
+        out.write(value.length);
         out.write(value);
     }
 
@@ -44,32 +53,28 @@ public class PutResponseMessage extends Message {
     }
 
     public byte[] getValue() {
-        return this.value;
+        return this.value.clone();
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other)
-            return true;
-        if ((other == null) || (this.getClass() != other.getClass()))
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != this.getClass())
             return false;
-        PutResponseMessage that = (PutResponseMessage) other;
-        return this.requestId == that.requestId && this.value.equals(that.value);
+
+        PutResponseMessage message = (PutResponseMessage) o;
+        return this.requestId == message.getRequestId() &&
+            Arrays.equals(this.value, message.getValue());
     }
 
     @Override
     public Object clone() {
-        try {
-            return super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
+        return new PutResponseMessage(this);
     }
 
     @Override
     public String toString() {
-        String str = "PutResponseMessage(Id= %d, Value= %s)";
-        String res = String.format(str, this.requestId, Arrays.toString(this.value));
-        return res;
+        return String.format("PutResponseMessage(id=%d, value=%s)",
+                             this.requestId,
+                             Arrays.toString(this.value));
     }
 }

@@ -18,9 +18,14 @@ package org.example.sd.common;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.ArrayUtils;
 
 public class MultiGetResponseMessage extends Message {
     private int                 requestId;
@@ -28,27 +33,35 @@ public class MultiGetResponseMessage extends Message {
 
     public MultiGetResponseMessage(int requestId, Map<String, byte[]> map) {
         this.requestId = requestId;
-        this.map       = map;
+        this.map       = map.entrySet().stream().collect(
+            Collectors.toMap(Map.Entry::getKey, e -> e.getValue().clone()));
     }
 
-    public static MultiGetResponseMessage messageDeserialize(DataInputStream in) {
+    public MultiGetResponseMessage(MultiGetResponseMessage message) {
+        this(message.getRequestId(), message.getMap());
+    }
+
+    public static MultiGetResponseMessage messageDeserialize(DataInputStream in)
+        throws IOException {
+
         int                 requestId = in.readInt();
-        int                 mapSize   = in.readInt();
-        Map<String, byte[]> map       = new HashMap<>();
-        for (int i = 0; i < mapSize; i++) {
-            String key         = in.readUTF();
-            int    valueLength = in.readInt();
-            byte[] value       = new byte[valueLength];
+        int                 length    = in.readInt();
+        Map<String, byte[]> map       = new HashMap<String, byte[]>();
+        for (int i = 0; i < length; i++) {
+            String key   = in.readUTF();
+            byte[] value = new byte[in.readInt()];
             in.readFully(value);
             map.put(key, value);
         }
+
         return new MultiGetResponseMessage(requestId, map);
     }
 
-    protected void messageSerialize(DataOutputStream out) {
+    protected void messageSerialize(DataOutputStream out) throws IOException {
         out.writeInt(requestId);
+
         out.writeInt(map.size());
-        for (Map.Entry<String, byte[]> entry : map.entrySet()) {
+        for (Map.Entry<String, byte[]> entry : this.map.entrySet()) {
             out.writeUTF(entry.getKey());
             out.writeInt(entry.getValue().length);
             out.write(entry.getValue());
@@ -60,50 +73,51 @@ public class MultiGetResponseMessage extends Message {
     }
 
     public Map<String, byte[]> getMap() {
-        return this.map;
+        return this.map.entrySet().stream().collect(
+            Collectors.toMap(Map.Entry::getKey, e -> e.getValue().clone()));
+    }
+
+    private Map<String, List<Byte>> getComparableMap() {
+        return this.map.entrySet().stream().collect(
+            Collectors.toMap(Map.Entry::getKey,
+                             e -> Arrays.asList(ArrayUtils.toObject(e.getValue()))));
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other)
-            return true;
-        if (other == null || getClass() != other.getClass())
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != this.getClass())
             return false;
-        MultiGetResponseMessage that = (MultiGetResponseMessage) other;
-        return requestId == that.requestId && map.equals(that.map);
+
+        MultiGetResponseMessage message = (MultiGetResponseMessage) o;
+        return this.requestId == message.getRequestId() &&
+            this.getComparableMap().equals(message.getComparableMap());
     }
 
     @Override
     public Object clone() {
-        try {
-            MultiGetResponseMessage cloned = (MultiGetResponseMessage) super.clone();
-            cloned.map                     = new HashMap<>(this.map.size());
-            for (Map.Entry<String, byte[]> entry : this.map.entrySet()) {
-                cloned.map.put(entry.getKey(), entry.getValue().clone());
-            }
-            return cloned;
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
+        return new MultiGetResponseMessage(this);
     }
 
     @Override
     public String toString() {
-        StringBuilder mapString = new StringBuilder();
-        mapString.append("{");
-        for (Map.Entry<String, byte[]> entry : map.entrySet()) {
-            mapString.append(entry.getKey())
-                .append("=")
-                .append(Arrays.toString(entry.getValue()))
-                .append(", ");
-        }
-        if (mapString.length() > 1) {
-            mapString.setLength(mapString.length() - 2);
-        }
-        mapString.append("}");
+        StringBuilder builder = new StringBuilder();
+        builder.append("MultiGetResponseMessage(requestId = ");
+        builder.append(this.requestId);
+        builder.append(", map = {");
 
-        String str = "MultiGetResponseMessage(RequestId= %d, Map= %s)";
-        String res = String.format(str, this.requestId, mapString.toString());
-        return res;
+        boolean isFirst = true;
+        for (Map.Entry<String, byte[]> entry : this.map.entrySet()) {
+            if (isFirst)
+                isFirst = false;
+            else
+                builder.append(", ");
+
+            builder.append(entry.getKey());
+            builder.append(": ");
+            builder.append(Arrays.toString(entry.getValue()));
+        }
+
+        builder.append("})");
+        return builder.toString();
     }
 }

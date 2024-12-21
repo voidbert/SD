@@ -18,6 +18,7 @@ package org.example.sd.common;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 
 public class GetRequestMessage extends Message {
     private int    id;
@@ -28,14 +29,19 @@ public class GetRequestMessage extends Message {
         this.key = key;
     }
 
-    public static GetRequestMessage messageDeserialize(DataInputStream in) {
-        int    id  = in.readInt();
-        String key = in.readUTF();
+    public GetRequestMessage(GetRequestMessage message) {
+        this(message.getId(), message.getKey());
     }
 
-    protected void messageSerialize(DataOutputStream out) {
-        out.writeInt(id);
-        out.writeUTF(key);
+    public static GetRequestMessage messageDeserialize(DataInputStream in) throws IOException {
+        int    id  = in.readInt();
+        String key = in.readUTF();
+        return new GetRequestMessage(id, key);
+    }
+
+    protected void messageSerialize(DataOutputStream out) throws IOException {
+        out.writeInt(this.id);
+        out.writeUTF(this.key);
     }
 
     public int getId() {
@@ -47,28 +53,21 @@ public class GetRequestMessage extends Message {
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other)
-            return true;
-        if ((other == null) || (this.getClass() != other.getClass()))
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != this.getClass())
             return false;
-        GetRequestMessage that = (GetRequestMessage) other;
-        return this.id == that.id && this.key.equals(that.key);
+
+        GetRequestMessage message = (GetRequestMessage) o;
+        return this.id == message.getId() && this.key.equals(message.getKey());
     }
 
     @Override
     public Object clone() {
-        try {
-            return super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
+        return new GetRequestMessage(this);
     }
 
     @Override
     public String toString() {
-        String str = "GetRequestMessage(Id= %d, Key= %s)";
-        String res = String.format(str, this.id, this.key);
-        return res;
+        return String.format("GetRequestMessage(id=%d, key=%s)", this.id, this.key);
     }
 }
