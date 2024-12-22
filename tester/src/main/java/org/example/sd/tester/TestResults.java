@@ -26,11 +26,13 @@ public class TestResults {
     private Map<Operation, Long>    operationSum;
     private Map<Operation, Long>    operationSumSquares;
     private Map<Operation, Integer> operationCount;
+    private long                    testTime;
 
     public TestResults() {
         this.operationSum        = new HashMap<Operation, Long>();
         this.operationSumSquares = new HashMap<Operation, Long>();
         this.operationCount      = new HashMap<Operation, Integer>();
+        this.testTime            = -1;
 
         for (Operation operation : Operation.values()) {
             if (operation != Operation.GET_WHEN) {
@@ -45,6 +47,7 @@ public class TestResults {
         this.operationSum        = results.getOperationSum();
         this.operationSumSquares = results.getOperationSumSquares();
         this.operationCount      = results.getOperationCount();
+        this.testTime            = results.getTestTime();
     }
 
     public void addSample(Operation operation, long time) {
@@ -55,6 +58,10 @@ public class TestResults {
         this.operationSumSquares.put(operation,
                                      this.operationSumSquares.get(operation) + time * time);
         this.operationCount.put(operation, this.operationCount.get(operation) + 1);
+    }
+
+    public void setTestTime(long testTime) {
+        this.testTime = testTime;
     }
 
     public void mergeWith(TestResults results) {
@@ -100,6 +107,10 @@ public class TestResults {
         }
     }
 
+    public long getTestTime() {
+        return this.testTime;
+    }
+
     private Map<Operation, Long> getOperationSum() {
         return this.operationSum.entrySet().stream().collect(
             Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
@@ -126,7 +137,8 @@ public class TestResults {
         TestResults results = (TestResults) o;
         return this.operationSum.equals(results.getOperationSum()) &&
             this.operationSumSquares.equals(results.getOperationSumSquares()) &&
-            this.operationCount.equals(results.getOperationCount());
+            this.operationCount.equals(results.getOperationCount()) &&
+            this.testTime == results.getTestTime();
     }
 
     public String toString() {
@@ -148,6 +160,8 @@ public class TestResults {
             }
         }
 
+        builder.append(", testTime=");
+        builder.append(this.testTime);
         builder.append(")");
         return builder.toString();
     }

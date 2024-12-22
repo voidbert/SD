@@ -21,10 +21,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.OptionalDouble;
 
 import org.example.sd.common.KeyValueDB;
+import org.example.sd.libserver.MultiConditionHashMapBackend;
+import org.example.sd.libserver.ShardedHashMapBackend;
 import org.example.sd.libserver.SimpleHashMapBackend;
 
 import org.apache.commons.math3.distribution.AbstractIntegerDistribution;
@@ -38,13 +41,18 @@ import org.jfree.data.category.DefaultCategoryDataset;
 
 public class TestSuite {
     private final static int[] threadCounts = new int[] { 1, 2, 4, 8, 16 };
+
     private final static Map<String, OperationDistribution> operationDistributions = Map.ofEntries(
         Map.entry("Maioritariamente leituras",
                   new OperationDistribution(0.05, 0.70, 0.0, 0.25, 0.0)),
         Map.entry("Equilibrado", new OperationDistribution(0.25, 0.25, 0.25, 0.25, 0.0)),
         Map.entry("Equilibrado com getWhen",
                   new OperationDistribution(0.25, 0.20, 0.25, 0.25, 0.05)));
-    private final static KeyValueDB[] backends = new KeyValueDB[] { new SimpleHashMapBackend() };
+
+    private final static KeyValueDB[] backends =
+        new KeyValueDB[] { new SimpleHashMapBackend(),
+                           new MultiConditionHashMapBackend(),
+                           new ShardedHashMapBackend(64) };
 
     private final String outputDirectory;
 
@@ -63,20 +71,38 @@ public class TestSuite {
     public void run() throws IOException {
         (new File(this.outputDirectory)).mkdir();
 
+        Map<String, DefaultCategoryDataset> times = new HashMap<String, DefaultCategoryDataset>();
+
         for (int nThreads : TestSuite.threadCounts) {
             for (Map.Entry<String, OperationDistribution> dist :
                  TestSuite.operationDistributions.entrySet()) {
 
+                String                distName  = dist.getKey();
+                OperationDistribution distValue = dist.getValue();
+
+                times.putIfAbsent(distName, new DefaultCategoryDataset());
+
                 DefaultCategoryDataset dataset = new DefaultCategoryDataset();
                 for (KeyValueDB backend : TestSuite.backends) {
-                    TestResults results = this.runTest(nThreads, backend, dist.getValue());
-                    this.exportCSV(results, nThreads, dist.getKey(), backend);
-                    this.addTestResultsToDataset(dataset, results, backend);
+                    if (backend instanceof ShardedHashMapBackend && distValue.getGetWhen() > 0)
+                        continue;
+
+                    TestResults results = this.runTest(nThreads, backend, distValue);
+                    this.exportCSV(results, nThreads, distName, backend);
+                    this.addTestResultsToComparisonDataset(dataset, results, backend);
+
+                    times.get(distName).addValue(results.getTestTime() * 1.0e-9,
+                                                 nThreads + " threads",
+                                                 backend.getClass().getSimpleName());
                 }
 
-                this.exportChart(dataset, nThreads, dist.getKey());
+                this.exportComparisonChart(dataset, nThreads, dist.getKey());
             }
         }
+
+        for (Map.Entry<String, DefaultCategoryDataset> time : times.entrySet())
+            if (TestSuite.operationDistributions.get(time.getKey()).getGetWhen() == 0.0)
+                this.exportThreadsChart(time.getValue(), time.getKey());
     }
 
     private TestResults
@@ -109,9 +135,9 @@ public class TestSuite {
         return test.run();
     }
 
-    private void addTestResultsToDataset(DefaultCategoryDataset dataset,
-                                         TestResults            results,
-                                         KeyValueDB             backend) {
+    private void addTestResultsToComparisonDataset(DefaultCategoryDataset dataset,
+                                                   TestResults            results,
+                                                   KeyValueDB             backend) {
 
         for (Operation operation : Operation.values()) {
             if (operation != Operation.GET_WHEN) {
@@ -166,8 +192,9 @@ public class TestSuite {
         System.out.printf("Exported %s\n", filename);
     }
 
-    private void exportChart(CategoryDataset dataset, int nThreads, String distributionName)
-        throws IOException {
+    private void exportComparisonChart(CategoryDataset dataset,
+                                       int             nThreads,
+                                       String          distributionName) throws IOException {
 
         String threadString = nThreads > 1 ? "threads" : "thread";
         String title        = String.format("%s (%d %s)", distributionName, nThreads, threadString);
@@ -178,6 +205,21 @@ public class TestSuite {
                                         threadString);
 
         JFreeChart chart = ChartFactory.createBarChart(title, null, "Tempo (ns)", dataset);
+        this.exportChart(chart, filename);
+    }
+
+    private void exportThreadsChart(CategoryDataset dataset, String distributionName)
+        throws IOException {
+
+        String title = String.format("Duração de um teste - %s", distributionName);
+        String filename =
+            String.format("%s/%s.eps", this.outputDirectory, distributionName.replace(' ', '_'));
+
+        JFreeChart chart = ChartFactory.createBarChart(title, null, "Tempo (s)", dataset);
+        this.exportChart(chart, filename);
+    }
+
+    private void exportChart(JFreeChart chart, String filename) throws IOException {
         (new OurChartTheme()).apply(chart);
         chart.getCategoryPlot().getDomainAxis().setTickMarksVisible(false);
         chart.getCategoryPlot().getRangeAxis().setTickMarksVisible(false);
@@ -186,8 +228,8 @@ public class TestSuite {
         FileOutputStream      stream = new FileOutputStream(new File(filename));
         EPSDocumentGraphics2D g      = new EPSDocumentGraphics2D(false);
         g.setGraphicContext(new GraphicContext());
-        g.setupDocument(stream, 600, 400);
-        chart.draw(g, new Rectangle2D.Double(0, 0, 600, 400));
+        g.setupDocument(stream, 800, 400);
+        chart.draw(g, new Rectangle2D.Double(0, 0, 800, 400));
         stream.close();
 
         System.out.printf("Exported %s\n", filename);

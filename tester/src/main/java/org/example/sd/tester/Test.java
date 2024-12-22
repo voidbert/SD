@@ -101,6 +101,8 @@ public class Test {
                                                          threadResults[lambda_i]));
         }
 
+        long startTime = System.nanoTime();
+
         // Run all threads (including getWhen unlocker thread, if needed)
         if (this.operationDistribution.getGetWhen() > 0) {
             getWhenUnlockerThread = new Thread(
@@ -125,9 +127,14 @@ public class Test {
             } catch (InterruptedException e) {}
         }
 
+        long endTime = System.nanoTime();
+
         // Prepare final test results
         for (int i = 1; i < this.nThreads; ++i)
             threadResults[0].mergeWith(threadResults[i]);
+
+        if (this.operationDistribution.getGetWhen() == 0)
+            threadResults[0].setTestTime(endTime - startTime);
         return threadResults[0];
     }
 
