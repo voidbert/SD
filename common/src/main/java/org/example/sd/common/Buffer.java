@@ -36,8 +36,12 @@ public class Buffer {
     public void send(Message message) {
         lock.lock();
         try {
-            buffer.add(message);
-            notEmpty.signal();
+            if (buffer.isEmpty()) {
+                buffer.add(message);
+                notEmpty.signal();
+            } else {
+                buffer.add(message);
+            }
         } finally {
             lock.unlock();
         }

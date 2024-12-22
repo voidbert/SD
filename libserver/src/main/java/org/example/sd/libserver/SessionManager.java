@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.example.sd.common;
+package org.example.sd.libserver;
 
 import java.net.Socket;
 import java.util.HashMap;
@@ -84,11 +84,5 @@ public class SessionManager {
         } finally {
             lock.unlock();
         }
-    }
-}
-
-class SessionException extends Exception {
-    public SessionException(String message) {
-        super(message);
     }
 }
