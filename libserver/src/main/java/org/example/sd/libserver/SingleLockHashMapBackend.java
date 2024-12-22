@@ -82,14 +82,17 @@ public abstract class SingleLockHashMapBackend implements KeyValueDB {
     }
 
     public Map<String, byte[]> multiGet(Set<String> keys) {
+        Map<String, byte[]> ret = new HashMap<String, byte[]>();
+
         this.lock.readLock().lock();
         try {
-            return keys.stream().collect(Collectors.toMap(k -> k, k -> {
-                byte[] value = this.map.get(k);
+            for (String key : keys) {
+                byte[] value = this.map.get(key);
                 if (value != null)
-                    value = value.clone();
-                return value;
-            }));
+                    ret.put(key, value.clone());
+            }
+
+            return ret;
         } finally {
             this.lock.readLock().unlock();
         }
