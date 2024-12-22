@@ -42,7 +42,7 @@ public class ShardedHashMapBackend implements KeyValueDB {
 
         for (int i = 0; i < nShards; ++i) {
             this.shards[i] = new HashMap<String, byte[]>();
-            this.locks[i]  = new ReentrantReadWriteLock(true);
+            this.locks[i]  = new ReentrantReadWriteLock();
         }
     }
 

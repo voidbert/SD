@@ -35,7 +35,7 @@ public abstract class SingleLockHashMapBackend implements KeyValueDB {
     protected Map<String, byte[]> map;
 
     protected SingleLockHashMapBackend() {
-        this.lock                  = new ReentrantReadWriteLock(true);
+        this.lock                  = new ReentrantReadWriteLock();
         this.triggersDoneCondition = this.lock.writeLock().newCondition();
         this.unsignaledTriggers    = new HashSet<Long>();
         this.map                   = new HashMap<>();
