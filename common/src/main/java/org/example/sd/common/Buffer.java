@@ -22,12 +22,12 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class SimpleBuffer {
+public class Buffer {
     private final Queue<Message> buffer;
     private final Lock           lock;
     private final Condition      notEmpty;
 
-    public SimpleBuffer() {
+    public Buffer() {
         this.buffer   = new ArrayDeque<>();
         this.lock     = new ReentrantLock();
         this.notEmpty = lock.newCondition();
