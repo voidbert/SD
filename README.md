@@ -18,7 +18,7 @@ respectively:
 ```
 $ ./gradlew :server:run
 $ ./gradlew :client:run
-$ ./gradlew :tester:run
+$ ./gradlew :tester:run --args "output_directory"
 ```
 
 ### Developers
