@@ -14,31 +14,18 @@
  * limitations under the License.
  */
 
-plugins {
-    java
-    application
-}
+package org.example.sd.client;
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation("org.apache.commons:commons-lang3:3.17.0")
-
-    implementation(project(":common"))
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+public class CommandException extends Exception {
+    public CommandException() {
+        super();
     }
-}
 
-application {
-    mainClass = "org.example.sd.client.Client"
-}
+    public CommandException(String message) {
+        super(message);
+    }
 
-tasks.named<JavaExec>("run") {
-    standardInput = System.`in`
+    public CommandException(Throwable t) {
+        super(t);
+    }
 }

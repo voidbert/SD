@@ -16,10 +16,26 @@
 
 package org.example.sd.client;
 
-import org.example.sd.common.Common;
+import java.util.Scanner;
+
+import org.example.sd.common.KeyValueDB;
 
 public class Client {
     public static void main(String[] args) {
-        System.out.println(Common.CLIENT_MESSAGE);
+        KeyValueDB    database = null; // TODO - replace with client abstraction
+        Scanner       scanner  = new Scanner(System.in);
+        CommandRunner runner   = new LoggerCommandRunner(database, "> ");
+
+        System.out.print("> ");
+        while (scanner.hasNextLine()) {
+            String command = scanner.nextLine();
+
+            try {
+                runner.parseAndRun(command);
+            } catch (CommandException e) {
+                System.err.printf("%s\n> ", e.getMessage());
+            }
+        }
+        scanner.close();
     }
 }
