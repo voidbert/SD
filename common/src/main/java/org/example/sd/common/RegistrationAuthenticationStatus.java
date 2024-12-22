@@ -14,21 +14,31 @@
  * limitations under the License.
  */
 
-plugins {
-    java
-    `java-library`
-}
+package org.example.sd.common;
 
-repositories {
-    mavenCentral()
-}
+public enum RegistrationAuthenticationStatus {
+    SUCCESS,
+    WRONG_CREDENTIALS;
 
-dependencies {
-    implementation("org.apache.commons:commons-lang3:3.17.0")
-}
+    public int toInt() {
+        switch (this) {
+            case SUCCESS:
+                return 0;
+            case WRONG_CREDENTIALS:
+                return 1;
+            default:
+                return -1; // Unreachable
+        }
+    }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+    public static RegistrationAuthenticationStatus fromInt(int i) {
+        switch (i) {
+            case 0:
+                return SUCCESS;
+            case 1:
+                return WRONG_CREDENTIALS;
+            default:
+                return null;
+        }
     }
 }
