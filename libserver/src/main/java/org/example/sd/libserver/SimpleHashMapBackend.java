@@ -17,37 +17,21 @@
 package org.example.sd.libserver;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
 import org.example.sd.common.KeyValueDB;
 
-public class SimpleHashMapBackend implements KeyValueDB {
-    private ReadWriteLock lock;
-    private Condition     databaseChangedCondition;
-    private Condition     triggersDoneCondition;
-
-    private Map<String, byte[]> map;
-
-    boolean     processingTriggers;
-    private int waitingTriggers;
-    private int unsignaledTriggers;
+public class SimpleHashMapBackend extends SingleLockHashMapBackend {
+    private Condition databaseChangedCondition;
+    private Set<Long> waitingTriggers;
 
     public SimpleHashMapBackend() {
-        this.lock                     = new ReentrantReadWriteLock();
+        super();
         this.databaseChangedCondition = this.lock.writeLock().newCondition();
-        this.triggersDoneCondition    = this.lock.writeLock().newCondition();
-
-        this.map = new HashMap<>();
-
-        this.processingTriggers = false;
-        this.waitingTriggers    = 0;
-        this.unsignaledTriggers = 0;
+        this.waitingTriggers          = new HashSet<Long>();
     }
 
     public SimpleHashMapBackend(SimpleHashMapBackend database) {
@@ -55,144 +39,43 @@ public class SimpleHashMapBackend implements KeyValueDB {
         this.map = database.getMap();
     }
 
-    public void put(String key, byte[] value) {
-        this.lock.writeLock().lock();
-        try {
-            while (processingTriggers)
-                this.triggersDoneCondition.awaitUninterruptibly();
-
-            this.map.put(key, value.clone());
-
-            if (waitingTriggers > 0) {
-                this.processingTriggers = true;
-                this.unsignaledTriggers = this.waitingTriggers;
-                this.databaseChangedCondition.signalAll();
-            }
-        } finally {
-            this.lock.writeLock().unlock();
+    protected void summonTriggersAfterPut(String key, byte[] value) {
+        if (this.waitingTriggers.size() > 0) {
+            this.unsignaledTriggers.addAll(this.waitingTriggers);
+            this.databaseChangedCondition.signalAll();
         }
     }
 
-    public byte[] get(String key) {
-        this.lock.readLock().lock();
-        try {
-            byte[] value = this.map.get(key);
-            if (value != null)
-                value = value.clone();
-            return value;
-        } finally {
-            this.lock.readLock().unlock();
+    protected void summonTriggersAfterMultiPut(Map<String, byte[]> pairs) {
+        if (this.waitingTriggers.size() > 0) {
+            this.unsignaledTriggers.addAll(this.waitingTriggers);
+            this.databaseChangedCondition.signalAll();
         }
     }
 
-    public void multiPut(Map<String, byte[]> pairs) {
-        this.lock.writeLock().lock();
-        try {
-            while (processingTriggers)
-                this.triggersDoneCondition.awaitUninterruptibly();
+    protected void getWhenWait(String keyCond, byte[] valueCond) {
+        long threadId = Thread.currentThread().threadId();
+        this.waitingTriggers.add(threadId);
 
-            for (Map.Entry<String, byte[]> pair : pairs.entrySet())
-                this.map.put(pair.getKey(), pair.getValue().clone());
+        while (!Arrays.equals(this.map.get(keyCond), valueCond)) {
+            this.databaseChangedCondition.awaitUninterruptibly();
 
-            if (waitingTriggers > 0) {
-                this.processingTriggers = true;
-                this.unsignaledTriggers = this.waitingTriggers;
-                this.databaseChangedCondition.signalAll();
-            }
-        } finally {
-            this.lock.writeLock().unlock();
-        }
-    }
+            if (this.unsignaledTriggers.contains(threadId)) {
+                this.unsignaledTriggers.remove(threadId);
 
-    public Map<String, byte[]> multiGet(Set<String> keys) {
-        this.lock.readLock().lock();
-        try {
-            return keys.stream().collect(Collectors.toMap(k -> k, k -> {
-                byte[] value = this.map.get(k);
-                if (value != null)
-                    value = value.clone();
-                return value;
-            }));
-        } finally {
-            this.lock.readLock().unlock();
-        }
-    }
-
-    public byte[] getWhen(String key, String keyCond, byte[] valueCond) {
-        this.lock.writeLock().lock(); // Needed for conditions
-        try {
-            this.waitingTriggers++;
-
-            while (!Arrays.equals(this.map.get(keyCond), valueCond)) {
-                this.databaseChangedCondition.awaitUninterruptibly();
-
-                this.unsignaledTriggers--;
-                if (this.unsignaledTriggers == 0) {
-                    this.processingTriggers = false;
+                if (this.unsignaledTriggers.size() == 0)
                     this.triggersDoneCondition.signalAll();
-                }
             }
-
-            this.waitingTriggers--;
-
-            byte[] value = this.map.get(key);
-            if (value != null)
-                value = value.clone();
-            return value;
-        } finally {
-            this.lock.writeLock().unlock();
         }
-    }
 
-    private Map<String, byte[]> getMap() {
-        this.lock.readLock().lock();
-        try {
-            return this.map.entrySet().stream().collect(
-                Collectors.toMap(Map.Entry::getKey, e -> e.getValue().clone()));
-        } finally {
-            this.lock.readLock().unlock();
-        }
+        this.waitingTriggers.remove(threadId);
     }
 
     public Object clone() {
         return new SimpleHashMapBackend(this);
     }
 
-    public boolean equals(Object o) {
-        if (o == null || o.getClass() != this.getClass())
-            return false;
-
-        SimpleHashMapBackend backend = (SimpleHashMapBackend) o;
-        this.lock.readLock().lock();
-        try {
-            return this.map.equals(backend.getMap());
-        } finally {
-            this.lock.readLock().unlock();
-        }
-    }
-
     public String toString() {
-        this.lock.readLock().lock();
-        try {
-            StringBuilder builder = new StringBuilder();
-            builder.append("SimpleHashMapBackend({");
-
-            boolean isFirst = true;
-            for (Map.Entry<String, byte[]> entry : this.map.entrySet()) {
-                if (isFirst)
-                    isFirst = false;
-                else
-                    builder.append(", ");
-
-                builder.append(entry.getKey());
-                builder.append(": ");
-                builder.append(Arrays.toString(entry.getValue()));
-            }
-
-            builder.append("})");
-            return builder.toString();
-        } finally {
-            this.lock.readLock().unlock();
-        }
+        return "SimpleHashMapBackend(" + super.toString() + ")";
     }
 }
