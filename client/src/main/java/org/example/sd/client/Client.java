@@ -16,19 +16,50 @@
 
 package org.example.sd.client;
 
+import java.io.IOException;
 import java.util.Scanner;
 
+import org.example.sd.common.DatabaseClient;
 import org.example.sd.common.KeyValueDB;
 
 public class Client {
+    public static final int N_CONDITIONS = 32;
+
     public static void main(String[] args) {
-        KeyValueDB    database = null; // TODO - replace with client abstraction
-        Scanner       scanner  = new Scanner(System.in);
-        CommandRunner runner   = new LoggerCommandRunner(database, "> ");
+        String address = "";
+        int    port    = 0;
+        try {
+            if (args.length != 1)
+                throw new Exception();
+
+            String[] addressPort = args[0].split(":");
+            if (addressPort.length != 2)
+                throw new Exception();
+
+            address = addressPort[0];
+            port    = Integer.valueOf(addressPort[1]);
+        } catch (Exception e) {
+            System.err.println("Usage: gradle :client:run --args <address>:<port>");
+            System.exit(1);
+        }
+
+        DatabaseClient database = null;
+        try {
+            database = new DatabaseClient(address, port, Client.N_CONDITIONS);
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        }
+
+        Scanner       scanner = new Scanner(System.in);
+        CommandRunner runner  = new LoggerCommandRunner(database, "> ");
 
         System.out.print("> ");
         while (scanner.hasNextLine()) {
             String command = scanner.nextLine();
+
+            if (database.isConnectionBroken())
+                System.exit(1); // Something should have been printed by now
 
             try {
                 runner.parseAndRun(command);
