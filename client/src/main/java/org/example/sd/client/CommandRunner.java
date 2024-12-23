@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.example.sd.common.DatabaseClientException;
 import org.example.sd.common.KeyValueDB;
 import org.example.sd.common.Message;
 
@@ -65,8 +66,12 @@ public abstract class CommandRunner {
             throw new CommandException("Non-alphanumeric GET argument: " + argument);
 
         chooseForegroundOrBackground(isBackground, () -> {
-            byte[] value = this.database.get(argument);
-            this.reactToGetResult(argument, value);
+            try {
+                byte[] value = this.database.get(argument);
+                this.reactToGetResult(argument, value);
+            } catch (DatabaseClientException e) {
+                this.reactToException(e);
+            }
         });
     }
 
@@ -82,8 +87,12 @@ public abstract class CommandRunner {
         byte[] value = this.parseValueArray(arguments.substring(keyEnd).trim(), "PUT");
 
         chooseForegroundOrBackground(isBackground, () -> {
-            this.database.put(key, value);
-            this.reactToPutResult(key, value);
+            try {
+                this.database.put(key, value);
+                this.reactToPutResult(key, value);
+            } catch (DatabaseClientException e) {
+                this.reactToException(e);
+            }
         });
     }
 
@@ -115,8 +124,12 @@ public abstract class CommandRunner {
             throw new CommandException("Wrong number of MULTIPUT arguments");
 
         chooseForegroundOrBackground(isBackground, () -> {
-            this.database.multiPut(pairs);
-            this.reactToMultiPutResult(pairs);
+            try {
+                this.database.multiPut(pairs);
+                this.reactToMultiPutResult(pairs);
+            } catch (DatabaseClientException e) {
+                this.reactToException(e);
+            }
         });
     }
 
@@ -134,8 +147,12 @@ public abstract class CommandRunner {
                 throw new CommandException("Non-alphanumeric MULTIGET key: " + key);
 
         chooseForegroundOrBackground(isBackground, () -> {
-            Map<String, byte[]> result = this.database.multiGet(keys);
-            this.reactToMultiGetResult(keys, result);
+            try {
+                Map<String, byte[]> result = this.database.multiGet(keys);
+                this.reactToMultiGetResult(keys, result);
+            } catch (DatabaseClientException e) {
+                this.reactToException(e);
+            }
         });
     }
 
@@ -163,8 +180,12 @@ public abstract class CommandRunner {
             this.parseValueArray(remainingArguments.substring(keyCondEnd).trim(), "GETWHEN");
 
         chooseForegroundOrBackground(isBackground, () -> {
-            byte[] value = this.database.getWhen(key, keyCond, valueCond);
-            this.reactToGetWhenResult(key, keyCond, valueCond, value);
+            try {
+                byte[] value = this.database.getWhen(key, keyCond, valueCond);
+                this.reactToGetWhenResult(key, keyCond, valueCond, value);
+            } catch (DatabaseClientException e) {
+                this.reactToException(e);
+            }
         });
     }
 
@@ -205,6 +226,7 @@ public abstract class CommandRunner {
         }
     }
 
+    protected abstract void reactToException(DatabaseClientException e);
     protected abstract void reactToGetResult(String key, byte[] value);
     protected abstract void reactToPutResult(String key, byte[] value);
     protected abstract void reactToMultiGetResult(Set<String> keys, Map<String, byte[]> values);

@@ -22,11 +22,12 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.example.sd.common.DatabaseClientException;
 import org.example.sd.common.KeyValueDB;
 
 public class LoggerCommandRunner extends CommandRunner {
-    private Lock   outputLock;
-    private String prompt;
+    private Lock         outputLock;
+    private final String prompt;
 
     public LoggerCommandRunner(KeyValueDB database, String prompt) {
         super(database);
@@ -36,6 +37,12 @@ public class LoggerCommandRunner extends CommandRunner {
 
     public LoggerCommandRunner(LoggerCommandRunner runner) {
         this(runner.getDatabase(), runner.getPrompt());
+    }
+
+    @Override
+    protected void reactToException(DatabaseClientException e) {
+        // No need to lock stderr
+        System.err.printf("%s\n%s", e.getMessage(), this.prompt);
     }
 
     @Override
