@@ -21,13 +21,16 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class GetResponseMessage extends Message {
+public class GetResponseMessage extends Message implements ResponseMessage {
     private int    requestId;
     private byte[] value;
 
     public GetResponseMessage(int requestId, byte[] value) {
         this.requestId = requestId;
-        this.value     = value.clone();
+        if (value == null)
+            this.value = null;
+        else
+            this.value = value.clone();
     }
 
     public GetResponseMessage(GetResponseMessage message) {
@@ -63,6 +66,8 @@ public class GetResponseMessage extends Message {
     }
 
     public byte[] getValue() {
+        if (this.value == null)
+            return null;
         return this.value.clone();
     }
 

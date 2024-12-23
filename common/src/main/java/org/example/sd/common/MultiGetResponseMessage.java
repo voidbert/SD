@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-public class MultiGetResponseMessage extends Message {
+public class MultiGetResponseMessage extends Message implements ResponseMessage {
     private int                 requestId;
     private Map<String, byte[]> map;
 
