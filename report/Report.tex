@@ -10,10 +10,13 @@
 
 \chardef\_=`_
 
-\title{\textbf{
-    Sistemas Distribuídos -- Trabalho Prático  \\
-    \large Base de dados concorrente com acesso remoto
-}}
+\title{
+    \vspace*{\fill}
+    \textbf{
+        Sistemas Distribuídos -- Trabalho Prático  \\
+        \large Base de dados concorrente com acesso remoto
+    }
+}
 \author{
     \begin{tabular}{ll}
         Carolina Sofia Lopes Queirós Pereira  & A100836 \\
@@ -22,18 +25,24 @@
         Sara Azevedo Lopes                    & A104179
     \end{tabular}
 }
-\date{28 de dezembro de 2024}
+\date{28 de dezembro de 2024 \vspace*{\fill}}
 
 \begin{document}
 
 % Use rsvg-convert instead of direct EPS to get font embedding
 \immediate\write18{neato -Tsvg dot/Architecture.dot | rsvg-convert -f eps -o dot/Architecture.eps -}
+\immediate\write18{plantuml -teps:text uml/sequence.uml}
 
 \setlength{\parskip}{\baselineskip}
 \setlength{\parindent}{0pt}
-\def\arraystretch{1.5}
 
-\maketitle
+\begin{titlepage}
+    \maketitle
+\end{titlepage}
+
+\pagenumbering{gobble}
+\pagebreak
+\pagenumbering{arabic}
 
 \begin{abstract}
     O trabalho prático proposto consiste no desenvolvimento de uma base de dados que armazena, em
@@ -143,7 +152,40 @@ com que este \emph{backend} tivesse um desempenho semelhante aos \emph{backends}
 
 \section{Protocolo de comunicação entre \texttt{client} e \texttt{server}}
 
-\pagebreak % TODO - remover depois de escrever parte anterior
+\begin{minipage}{0.5\textwidth}
+    \setlength{\parskip}{\baselineskip}
+    \setlength{\parindent}{0pt}
+
+    À direita, apresenta-se um diagrama de sequência de uma possível troca de mensagens entre um
+    cliente e o servidor. Não são representados segmentos da camada de transporte (TCP).
+
+    As duas primeiras mensagens permitem a autenticação do cliente: o cliente pede a sua
+    autenticação / registo, e espera que o servidor responda (a autorizar o cliente ou a reportar
+    credenciais incorretas).
+
+    As restantes mensagens correspondem a pedidos do cliente para realizar operações na base de
+    dados, e às respostas do servidor, pelas quais o cliente aguarda. É de notar que todos os
+    pedidos se encontram numerados (campo \texttt{id}), e é possível que o servidor envie respostas
+    numa ordem diferente da qual recebeu os pedidos (campo \texttt{requestId}), permitindo a
+    existência de clientes \emph{multi-threaded}. Outra nota a fazer é que certas mensagens são
+    utilizadas para vários propósitos. Por exemplo, são utilizadas mensagens do tipo
+    \texttt{GetResponseMessage} para responder tanto a pedidos \texttt{get} como \texttt{getWhen},
+    uma vez que o conteúdo da resposta é o mesmo.
+
+    A serialização é feita com recurso às classes \texttt{Data[Input|Output]Stream}. Devido à
+    natureza multi-plataforma da linguagem Java, é possível a execução do cliente em diversos sistemas.
+    Devido à documentação publicamente disponível das classes mencionadas, também é possível interagir
+    com o servidor utilizando outras tecnologias (ex.: C).
+\end{minipage}
+\begin{minipage}{0.5\textwidth}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{uml/sequence.eps}
+        \caption{Diagrama de sequência da troca de mensagens entre um cliente e o servidor.}
+        \label{sequence}
+    \end{figure}
+\end{minipage}
+
 \section{\emph{Framework} de testes}
 
 \subsection{Funcionalidade e implementação}

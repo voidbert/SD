@@ -1,0 +1,29 @@
+@startuml
+skinparam defaultFontName CMU Serif
+
+Cliente  ->(10) Servidor: RegisterAuthenticateRequestMessage(username: String, password: String)
+Servidor ->(10) Cliente:  RegisterAuthenticateResponseMessage(status: RegistrationAuthenticationStatus)
+
+Cliente  ->(10) Servidor: PutRequestMessage(id: int, key: String, value: byte[])
+Servidor ->(10) Cliente:  PutResponseMessage(requestId: int)
+
+|||
+
+Cliente  ->(10) Servidor: GetRequestMessage(id: int, key: String)
+Servidor ->(10) Cliente:  GetResponseMessage(requestId: int, value: byte[])
+
+|||
+
+Cliente  ->(10) Servidor: MultiPutRequestMessage(id: int, map: Map<String, byte[]>)
+Servidor ->(10) Cliente:  PutResponseMessage(requestId: int)
+
+|||
+
+Cliente  ->(10) Servidor: MultiGetRequestMessage(id: int, keys: Set<String>)
+Servidor ->(10) Cliente:  MultiGetResponseMessage(requestId: int, map: Map<String, byte[]>)
+
+|||
+
+Cliente  ->(10) Servidor: GetWhenRequestMessage(id: int, key: String, keyCond: String, valueCond: byte[])
+Servidor ->(10) Cliente:  GetResponseMessage(requestId: int, value: byte[])
+@enduml
