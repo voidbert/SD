@@ -31,7 +31,7 @@ public abstract class CommandRunner {
     private final KeyValueDB database;
 
     protected CommandRunner(KeyValueDB database) {
-        this.database = (KeyValueDB) database.clone();
+        this.database = database;
     }
 
     public void parseAndRun(String str) throws CommandException {
@@ -211,4 +211,18 @@ public abstract class CommandRunner {
     protected abstract void reactToMultiPutResult(Map<String, byte[]> values);
     protected abstract void
         reactToGetWhenResult(String key, String keyCond, byte[] valueCond, byte[] value);
+
+    protected KeyValueDB getDatabase() {
+        return this.database;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != this.getClass())
+            return false;
+
+        // Check if the database is the same (not equal)
+        CommandRunner runner = (CommandRunner) o;
+        return this.database == runner.getDatabase();
+    }
 }

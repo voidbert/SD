@@ -34,6 +34,10 @@ public class LoggerCommandRunner extends CommandRunner {
         this.prompt     = prompt;
     }
 
+    public LoggerCommandRunner(LoggerCommandRunner runner) {
+        this(runner.getDatabase(), runner.getPrompt());
+    }
+
     @Override
     protected void reactToGetResult(String key, byte[] value) {
         this.outputLock.lock();
@@ -99,5 +103,28 @@ public class LoggerCommandRunner extends CommandRunner {
         } finally {
             this.outputLock.unlock();
         }
+    }
+
+    public String getPrompt() {
+        return this.prompt;
+    }
+
+    @Override
+    public Object clone() {
+        return new LoggerCommandRunner(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != this.getClass())
+            return false;
+
+        LoggerCommandRunner runner = (LoggerCommandRunner) o;
+        return super.equals(o) && this.prompt.equals(runner.getPrompt());
+    }
+
+    @Override
+    public String toString() {
+        return String.format("LoggerCommandRunner(prompt=%s)", this.prompt);
     }
 }
