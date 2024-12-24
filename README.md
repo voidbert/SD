@@ -16,8 +16,8 @@ The following commands can be used to run the server, the client, and the perfor
 respectively:
 
 ```
-$ ./gradlew :server:run
-$ ./gradlew :client:run
+$ ./gradlew :server:run --args "port max_connections backend"
+$ ./gradlew :client:run --args "address:port"
 $ ./gradlew :tester:run --args "output_directory"
 ```
 
