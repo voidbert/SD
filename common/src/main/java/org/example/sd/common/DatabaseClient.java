@@ -35,30 +35,62 @@ public class DatabaseClient implements KeyValueDB {
     private DataInputStream  in;
     private DataOutputStream out;
     private boolean          brokenConnection;
+    private boolean          authenticated;
 
     private Lock        lock;
     private Condition[] conditions;
 
     private int                   nextId;
     private Map<Integer, Message> replies;
+    private int                   authenticationId;
 
     public DatabaseClient(String address, int port, int nConditions) throws IOException {
         this.socket = new Socket(address, port);
         this.in     = new DataInputStream(new BufferedInputStream(this.socket.getInputStream()));
         this.out    = new DataOutputStream(new BufferedOutputStream(this.socket.getOutputStream()));
         this.brokenConnection = false;
+        this.authenticated    = false;
 
         this.lock       = new ReentrantLock();
         this.conditions = new Condition[nConditions];
         for (int i = 0; i < nConditions; ++i)
             this.conditions[i] = this.lock.newCondition();
 
-        this.nextId  = 1;
-        this.replies = new HashMap<Integer, Message>();
+        this.nextId           = 1;
+        this.replies          = new HashMap<Integer, Message>();
+        this.authenticationId = 0;
 
         Thread connectionReader = new Thread(() -> connectionReaderThreadLoop());
         connectionReader.setDaemon(true);
         connectionReader.start();
+    }
+
+    // NOT THREAD SAFE METHOD
+    public RegistrationAuthenticationStatus authenticate(String username, String password) {
+        if (this.authenticated)
+            throw new DatabaseClientException("Already authenticated");
+
+        Message reply = this.sendAndWaitForReply(
+            i -> new RegisterAuthenticateRequestMessage(username, password));
+
+        if (reply instanceof RegisterAuthenticateResponseMessage) {
+            RegistrationAuthenticationStatus status =
+                ((RegisterAuthenticateResponseMessage) reply).getStatus();
+
+            if (status == RegistrationAuthenticationStatus.SUCCESS ||
+                status == RegistrationAuthenticationStatus.SUCCESS_NEW_USER) {
+                this.lock.lock();
+                try {
+                    this.authenticated = true;
+                } finally {
+                    this.lock.unlock();
+                }
+            }
+
+            return status;
+        }
+
+        throw new DatabaseClientException("Wrong response type from server");
     }
 
     public void put(String key, byte[] value) {
@@ -103,8 +135,16 @@ public class DatabaseClient implements KeyValueDB {
     private Message sendAndWaitForReply(Function<Integer, Message> createMessage) {
         this.lock.lock();
         try {
-            int messageId = this.nextId++;
-            createMessage.apply(messageId).serialize(this.out);
+            int     messageId = this.nextId++;
+            Message request   = createMessage.apply(messageId);
+            if (request.getClass() == RegisterAuthenticateRequestMessage.class)
+                this.authenticationId = messageId;
+
+            if (!this.authenticated &&
+                request.getClass() != RegisterAuthenticateRequestMessage.class)
+                throw new DatabaseClientException("Not authenticated");
+
+            request.serialize(this.out);
             this.out.flush();
             Condition waitCondition = this.conditions[messageId % this.conditions.length];
 
@@ -132,8 +172,7 @@ public class DatabaseClient implements KeyValueDB {
             while (true) {
                 Message message = Message.deserialize(this.in);
                 if (message instanceof ResponseMessage) {
-                    ResponseMessage response  = (ResponseMessage) message;
-                    int             requestId = response.getRequestId();
+                    int requestId = ((ResponseMessage) message).getRequestId();
 
                     this.lock.lock();
                     try {
@@ -142,8 +181,19 @@ public class DatabaseClient implements KeyValueDB {
                     } finally {
                         this.lock.unlock();
                     }
+                } else if (message instanceof RegisterAuthenticateResponseMessage &&
+                           !this.authenticated) {
+
+                    this.lock.lock();
+                    try {
+                        this.replies.put(this.authenticationId, message);
+                        this.conditions[this.authenticationId % this.conditions.length].signalAll();
+                    } finally {
+                        this.lock.unlock();
+                    }
                 } else {
-                    System.err.println("Received request from server");
+                    System.err.printf("Invalid message received: %s\n",
+                                      message.getClass().getSimpleName());
                 }
             }
         } catch (IOException e) {
@@ -165,6 +215,15 @@ public class DatabaseClient implements KeyValueDB {
         this.lock.lock();
         try {
             return this.brokenConnection;
+        } finally {
+            this.lock.unlock();
+        }
+    }
+
+    public boolean isAuthenticated() {
+        this.lock.lock();
+        try {
+            return this.authenticated;
         } finally {
             this.lock.unlock();
         }
