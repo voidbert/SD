@@ -16,10 +16,50 @@
 
 package org.example.sd.server;
 
-import org.example.sd.common.Common;
+import java.io.IOException;
+
+import org.example.sd.common.KeyValueDB;
+import org.example.sd.libserver.DatabaseServer;
+import org.example.sd.libserver.MultiConditionHashMapBackend;
+import org.example.sd.libserver.ShardedHashMapBackend;
+import org.example.sd.libserver.SimpleHashMapBackend;
 
 public class Server {
-    public static void main(String[] args) {
-        System.out.println(Common.SERVER_MESSAGE);
+    public static void main(String[] args) throws IOException {
+        int        port           = 0;
+        int        maxConnections = 0;
+        KeyValueDB backend        = null;
+        try {
+            port           = Integer.valueOf(args[0]);
+            maxConnections = Integer.valueOf(args[1]);
+
+            int argCount = 3;
+            switch (args[2].toLowerCase()) {
+                case "simplehashmapbackend":
+                    backend = new SimpleHashMapBackend();
+                    break;
+                case "multiconditionhashmapbackend":
+                    backend = new MultiConditionHashMapBackend();
+                    break;
+                case "shardedhashmapbackend":
+                    backend = new ShardedHashMapBackend(Integer.valueOf(args[3]));
+                    argCount++;
+                    break;
+                default:
+                    throw new Exception();
+            }
+
+            if (args.length != argCount)
+                throw new Exception();
+        } catch (Exception e) {
+            System.err.println(
+                "Usage: gradle :server:run --args \"<port> <max_connections> <backend>\"");
+            System.err.println(
+                "         backend = SimpleHashMapBackend | MultiConditionHashMapBackend | ShardedHashMapBackend nShards");
+            System.exit(1);
+        }
+
+        DatabaseServer server = new DatabaseServer(port, maxConnections, backend);
+        server.run();
     }
 }
