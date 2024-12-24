@@ -199,13 +199,14 @@ servidor, que é sinalizada pela \emph{thread} de receção de mensagens. Para d
 enviada.
 
 Quanto ao servidor, uma \emph{thread} em cada conexão é responsável por deserializar os pedidos do
-cliente e despachá-los para uma \emph{thread pool}, que os executa. As \emph{threads} da
-\emph{thread pool}, após terminarem as operações na base de dados, respondem aos clientes,
-escrevendo em \emph{buffers} de mensagens, que são lidos por \emph{threads} de cada conexão,
-responsáveis apenas por escritas nos \emph{sockets}. Deste modo, é possível que o o resultado de um
-pedido de um cliente seja difundido por vários clientes, sem que clientes lentos bloqueiem a
-\emph{thread} na \emph{thread pool}. De momento, nenhum \emph{backend} tira proveito desta
-funcionalidade.
+cliente e despachá-los para uma \emph{thread pool}, que os executa. A \emph{thread pool}
+implementada regula o seu número de \emph{threads} para se ajustar ao volume de pedidos dos
+clientes. As \emph{threads} da \emph{thread pool}, após terminarem as operações na base de dados,
+respondem aos clientes, escrevendo em \emph{buffers} de mensagens, que são lidos por \emph{threads}
+de cada conexão, responsáveis apenas por escritas nos \emph{sockets}. Deste modo, é possível que o o
+resultado de um pedido de um cliente seja difundido por vários clientes, sem que clientes lentos
+bloqueiem a \emph{thread} na \emph{thread pool}. De momento, nenhum \emph{backend} tira proveito
+desta funcionalidade.
 
 \begin{figure}[H]
     \centering
