@@ -171,13 +171,9 @@ com que este \emph{backend} tivesse um desempenho semelhante aos \emph{backends}
     utilizadas para vários propósitos. Por exemplo, são utilizadas mensagens do tipo
     \texttt{GetResponseMessage} para responder tanto a pedidos \texttt{get} como \texttt{getWhen},
     uma vez que o conteúdo da resposta é o mesmo.
-
-    A serialização é feita com recurso às classes \texttt{Data[Input|Output]Stream}. Devido à
-    natureza multi-plataforma da linguagem Java, é possível a execução do cliente em diversos sistemas.
-    Devido à documentação publicamente disponível das classes mencionadas, também é possível interagir
-    com o servidor utilizando outras tecnologias (ex.: C).
 \end{minipage}
-\begin{minipage}{0.5\textwidth}
+\hspace{0.03\textwidth}
+\begin{minipage}{0.47\textwidth}
     \begin{figure}[H]
         \centering
         \includegraphics[width=\textwidth]{uml/sequence.eps}
@@ -185,6 +181,11 @@ com que este \emph{backend} tivesse um desempenho semelhante aos \emph{backends}
         \label{sequence}
     \end{figure}
 \end{minipage}
+
+A serialização é feita com recurso às classes \texttt{Data[Input|Output]Stream}. Devido à natureza
+multi-plataforma da linguagem Java, é possível a execução do cliente em diversos sistemas. Devido à
+documentação publicamente disponível das classes mencionadas, também é possível interagir com o
+servidor utilizando outras tecnologias (ex.: C).
 
 \section{Arquiteturas do cliente e do servidor}
 

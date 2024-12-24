@@ -1,5 +1,5 @@
 @startuml
-skinparam defaultFontName CMU Serif
+skinparam defaultFontName CMU Typewriter Text
 
 Cliente  ->(10) Servidor: RegisterAuthenticateRequestMessage(username: String, password: String)
 Servidor ->(10) Cliente:  RegisterAuthenticateResponseMessage(status: RegistrationAuthenticationStatus)
