@@ -112,10 +112,9 @@ public class DatabaseClient implements KeyValueDB {
             while (!this.brokenConnection && (reply = this.replies.get(messageId)) == null)
                 waitCondition.awaitUninterruptibly();
 
-            this.replies.remove(messageId);
-
             if (reply == null)
                 throw new DatabaseClientException("Unable to receive response from server");
+            this.replies.remove(messageId);
             return reply;
         } catch (IOException e) {
             this.brokenConnection = true;
