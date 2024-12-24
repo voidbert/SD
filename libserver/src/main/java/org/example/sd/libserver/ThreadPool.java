@@ -36,7 +36,7 @@ public class ThreadPool {
     private ArrayDeque<Runnable> buffer;
     private Map<Long, Thread>    threads;
     private Set<Long>            killedThreads;
-    private int                  usedThreads;
+    private int                  freeThreads;
     private long                 lastShrink;
 
     public ThreadPool() {
@@ -45,14 +45,14 @@ public class ThreadPool {
         this.buffer        = new ArrayDeque<Runnable>();
         this.threads       = new HashMap<Long, Thread>();
         this.killedThreads = new HashSet<Long>();
-        this.usedThreads   = 0;
+        this.freeThreads   = 0;
         this.lastShrink    = 0;
     }
 
     public void addTask(Runnable r) {
         this.lock.lock();
         try {
-            if (this.usedThreads >= this.threads.size()) {
+            if (this.freeThreads - this.buffer.size() <= 0) {
                 Thread thread = new Thread(() -> this.threadLoop());
                 thread.setDaemon(true);
                 thread.start();
@@ -60,8 +60,7 @@ public class ThreadPool {
             }
 
             this.buffer.add(r);
-            this.usedThreads++;
-            if (this.buffer.size() == 1)
+            if (this.freeThreads > 0)
                 this.condition.signal();
         } finally {
             this.lock.unlock();
@@ -69,8 +68,7 @@ public class ThreadPool {
     }
 
     private void threadLoop() {
-        long    threadId           = Thread.currentThread().threadId();
-        boolean processedOperation = false;
+        long threadId = Thread.currentThread().threadId();
 
         while (true) {
             Runnable runnable;
@@ -78,11 +76,10 @@ public class ThreadPool {
             // Get task to run
             this.lock.lock();
             try {
-                if (processedOperation)
-                    this.usedThreads--;
+                this.freeThreads++;
 
                 while (!this.killedThreads.contains(threadId) && this.buffer.isEmpty()) {
-                    if (this.usedThreads < this.threads.size() / 2 && this.threads.size() == 0) {
+                    if (this.freeThreads > this.threads.size() / 2 && this.threads.size() > 1) {
                         try {
                             this.condition.awaitNanos(ThreadPool.TIME_BETWEEN_SHRINKS);
                             this.shrinkIfNeeded();
@@ -97,18 +94,17 @@ public class ThreadPool {
                     return;
                 }
 
-                runnable           = this.buffer.poll();
-                processedOperation = false;
+                runnable = this.buffer.poll();
+                if (runnable != null)
+                    this.freeThreads--;
             } finally {
                 this.lock.unlock();
             }
 
             // Run task
             try {
-                if (runnable != null) {
-                    processedOperation = true;
+                if (runnable != null)
                     runnable.run();
-                }
             } catch (Exception e) {
                 // Don't let a bad task crash the pool's thread
                 System.err.printf("Threadpool exception: %s\n", e.getMessage());
@@ -119,12 +115,13 @@ public class ThreadPool {
     private void shrinkIfNeeded() {
         long time = System.nanoTime();
         int  half = this.threads.size() / 2;
-        if (time - this.lastShrink >= ThreadPool.TIME_BETWEEN_SHRINKS && this.usedThreads < half) {
+        if (time - this.lastShrink >= ThreadPool.TIME_BETWEEN_SHRINKS && this.freeThreads > half) {
             int              i  = 0;
             Iterator<Thread> it = this.threads.values().iterator();
             while (it.hasNext() && i < half) {
                 this.killedThreads.add(it.next().threadId());
                 it.remove();
+                this.freeThreads--;
                 i++;
             }
 
@@ -135,6 +132,6 @@ public class ThreadPool {
 
     @Override
     public String toString() {
-        return String.format("ThreadPool(nThreads=%d)", this.threads.size());
+        return "ThreadPool()";
     }
 }
