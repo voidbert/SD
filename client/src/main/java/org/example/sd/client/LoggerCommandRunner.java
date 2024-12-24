@@ -40,6 +40,16 @@ public class LoggerCommandRunner extends CommandRunner {
     }
 
     @Override
+    protected void reactToBackgrounding() {
+        this.outputLock.lock();
+        try {
+            System.out.printf("Request backgrounded\n%s", this.prompt);
+        } finally {
+            this.outputLock.unlock();
+        }
+    }
+
+    @Override
     protected void reactToException(DatabaseClientException e) {
         // No need to lock stderr
         System.err.printf("%s\n%s", e.getMessage(), this.prompt);

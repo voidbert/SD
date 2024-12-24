@@ -220,12 +220,14 @@ public abstract class CommandRunner {
         if (isBackground) {
             Thread t = new Thread(r);
             t.setDaemon(true);
+            this.reactToBackgrounding();
             t.start();
         } else {
             r.run();
         }
     }
 
+    protected abstract void reactToBackgrounding();
     protected abstract void reactToException(DatabaseClientException e);
     protected abstract void reactToGetResult(String key, byte[] value);
     protected abstract void reactToPutResult(String key, byte[] value);
