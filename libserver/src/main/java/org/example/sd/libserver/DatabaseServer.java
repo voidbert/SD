@@ -38,36 +38,41 @@ import org.example.sd.common.MultiGetResponseMessage;
 import org.example.sd.common.MultiPutRequestMessage;
 import org.example.sd.common.PutRequestMessage;
 import org.example.sd.common.PutResponseMessage;
+import org.example.sd.common.RegisterAuthenticateRequestMessage;
+import org.example.sd.common.RegisterAuthenticateResponseMessage;
+import org.example.sd.common.RegistrationAuthenticationStatus;
 
 public class DatabaseServer {
-    private int        port;
-    private int        maxConnections;
-    private ThreadPool threadPool;
-    private KeyValueDB backend;
+    private int            port;
+    private SessionManager sessions;
+    private ThreadPool     threadPool;
+    private KeyValueDB     backend;
 
     public DatabaseServer(int port, int maxConnections, KeyValueDB backend) {
-        this.port           = port;
-        this.maxConnections = maxConnections;
-        this.threadPool     = new ThreadPool();
-        this.backend        = backend;
+        this.port       = port;
+        this.sessions   = new SessionManager(maxConnections);
+        this.threadPool = new ThreadPool();
+        this.backend    = backend;
     }
 
     public void run() throws IOException {
         ServerSocket serverSocket = new ServerSocket(this.port);
         while (true) {
-            Socket socket = serverSocket.accept();
-
+            Socket socket     = serverSocket.accept();
             Buffer sendBuffer = new Buffer();
 
             Thread readThread = new Thread(() -> {
+                String[] username = new String[1];
                 try {
-                    this.connectionReadLoop(socket, sendBuffer);
+                    this.connectionReadLoop(socket, sendBuffer, username);
                 } catch (IOException e) {
                     if (!(e instanceof EOFException))
                         System.err.println(e.getMessage());
                 }
 
                 sendBuffer.shutdown();
+                if (username[0] != null)
+                    this.sessions.releaseSession(username[0]);
             });
 
             Thread writeThread = new Thread(() -> {
@@ -85,11 +90,47 @@ public class DatabaseServer {
         }
     }
 
-    private void connectionReadLoop(Socket socket, Buffer sendBuffer) throws IOException {
+    private void connectionReadLoop(Socket socket, Buffer sendBuffer, String[] username)
+        throws IOException {
+
         DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
 
-        // TODO - handle login here
+        // Handle logins
+        boolean stop = false;
+        while (!stop) {
+            Message message = Message.deserialize(in);
+            if (message instanceof RegisterAuthenticateRequestMessage) {
+                RegisterAuthenticateRequestMessage castedMessage =
+                    (RegisterAuthenticateRequestMessage) message;
+                RegistrationAuthenticationStatus status;
 
+                try {
+                    boolean newUser = this.sessions.acquireSession(castedMessage.getUsername(),
+                                                                   castedMessage.getPassword());
+
+                    stop        = true;
+                    username[0] = castedMessage.getUsername();
+                    if (newUser)
+                        status = RegistrationAuthenticationStatus.SUCCESS_NEW_USER;
+                    else
+                        status = RegistrationAuthenticationStatus.SUCCESS;
+                } catch (SessionException e) {
+                    if (e.getMessage().contains("authenticated"))
+                        status = RegistrationAuthenticationStatus.EXISTING_LOGIN;
+                    else
+                        status = RegistrationAuthenticationStatus.WRONG_CREDENTIALS;
+                }
+
+                try {
+                    sendBuffer.send(new RegisterAuthenticateResponseMessage(status));
+                } catch (BufferException e) {} // Unreachable
+            } else {
+                System.err.printf("Invalid message received: %s\n",
+                                  message.getClass().getSimpleName());
+            }
+        }
+
+        // Handle database requests
         while (true) {
             Message message = Message.deserialize(in);
             this.threadPool.addTask(() -> executeMessage(message, sendBuffer));
@@ -133,7 +174,7 @@ public class DatabaseServer {
 
         try {
             sendBuffer.send(replyMessage);
-        } catch (BufferException e) {} // Can only happen if we shutdown the buffer
+        } catch (BufferException e) {} // Unreachable
     }
 
     private void connectionWriteLoop(Socket socket, Buffer sendBuffer) throws IOException {
