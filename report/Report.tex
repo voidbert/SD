@@ -150,7 +150,7 @@ resolvido com um \emph{lock} ao nível da coleção, mas testes empíricos mostr
 com que este \emph{backend} tivesse um desempenho semelhante aos \emph{backends} de \emph{lock}
 único apresentados.
 
-\section{Protocolo de comunicação entre \texttt{client} e \texttt{server}}
+\section{Protocolo de comunicação entre um cliente e o servidor}
 
 \begin{minipage}{0.5\textwidth}
     \setlength{\parskip}{\baselineskip}
@@ -185,6 +185,33 @@ com que este \emph{backend} tivesse um desempenho semelhante aos \emph{backends}
         \label{sequence}
     \end{figure}
 \end{minipage}
+
+\section{Arquiteturas do cliente e do servidor}
+
+No cliente, o envio de uma mensagem é feito por qualquer \emph{thread} da aplicação, através de uma
+escrita no \emph{socket}, cujo acesso é moderado por um \emph{lock}. Há uma \emph{thread} dedicada à
+exclusivamente à leitura de mensagens do servidor e à sua deserialização. Após um pedido, as
+\emph{threads} da aplicação bloqueiam numa variável de condição até obterem uma resposta do
+servidor, que é sinalizada pela \emph{thread} de receção de mensagens. Para diminuir o número de
+\emph{threads} sinalizadas, são inicialmente criadas várias variáveis de condição, e uma
+\emph{thread} escolhe a variável de condição onde bloquear de acordo com o identificador da mensagem
+enviada.
+
+Quanto ao servidor, uma \emph{thread} em cada conexão é responsável por deserializar os pedidos do
+cliente e despachá-los para uma \emph{thread pool}, que os executa. As \emph{threads} da
+\emph{thread pool}, após terminarem as operações na base de dados, respondem aos clientes,
+escrevendo em \emph{buffers} de mensagens, que são lidos por \emph{threads} de cada conexão,
+responsáveis apenas por escritas nos \emph{sockets}. Deste modo, é possível que o o resultado de um
+pedido de um cliente seja difundido por vários clientes, sem que clientes lentos bloqueiem a
+\emph{thread} na \emph{thread pool}. De momento, nenhum \emph{backend} tira proveito desta
+funcionalidade.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{res/ClientServer.eps}
+    \caption{Arquitetura \emph{multi-thread} do cliente e do servidor.}
+    \label{client-server-architecture}
+\end{figure}
 
 \section{\emph{Framework} de testes}
 
