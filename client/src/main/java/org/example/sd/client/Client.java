@@ -16,11 +16,12 @@
 
 package org.example.sd.client;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Scanner;
 
 import org.example.sd.common.DatabaseClient;
-import org.example.sd.common.KeyValueDB;
+import org.example.sd.common.RegistrationAuthenticationStatus;
 
 public class Client {
     public static final int N_CONDITIONS = 32;
@@ -53,6 +54,34 @@ public class Client {
 
         Scanner       scanner = new Scanner(System.in);
         CommandRunner runner  = new LoggerCommandRunner(database, "> ");
+
+        while (!database.isAuthenticated()) {
+            System.out.print("Username: ");
+            if (!scanner.hasNextLine())
+                return;
+            String username = scanner.nextLine();
+
+            System.out.print("Password: ");
+            if (!scanner.hasNextLine())
+                return;
+            String password = scanner.nextLine();
+
+            RegistrationAuthenticationStatus status = database.authenticate(username, password);
+            switch (status) {
+                case RegistrationAuthenticationStatus.SUCCESS:
+                    System.out.println("Authentication success");
+                    break;
+                case RegistrationAuthenticationStatus.SUCCESS_NEW_USER:
+                    System.out.println("Authentication success (new user registered)");
+                    break;
+                case RegistrationAuthenticationStatus.WRONG_CREDENTIALS:
+                    System.out.println("Wrong credentials");
+                    break;
+                case RegistrationAuthenticationStatus.EXISTING_LOGIN:
+                    System.out.println("That user is already logged in");
+                    break;
+            }
+        }
 
         System.out.print("> ");
         while (scanner.hasNextLine()) {
