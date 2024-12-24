@@ -25,37 +25,58 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Buffer {
     private final Queue<Message> buffer;
     private final Lock           lock;
-    private final Condition      notEmpty;
+    private final Condition      condition;
+    private boolean              isShutdown;
 
     public Buffer() {
-        this.buffer   = new ArrayDeque<>();
-        this.lock     = new ReentrantLock();
-        this.notEmpty = lock.newCondition();
+        this.buffer     = new ArrayDeque<>();
+        this.lock       = new ReentrantLock();
+        this.condition  = this.lock.newCondition();
+        this.isShutdown = false;
     }
 
-    public void send(Message message) {
-        lock.lock();
+    public void send(Message message) throws BufferException {
+        this.lock.lock();
         try {
-            if (buffer.isEmpty()) {
-                buffer.add(message);
-                notEmpty.signal();
+            if (this.isShutdown)
+                throw new BufferException("Buffer was shutdown");
+
+            if (this.buffer.isEmpty()) {
+                this.buffer.add(message);
+                this.condition.signal();
             } else {
-                buffer.add(message);
+                this.buffer.add(message);
             }
         } finally {
-            lock.unlock();
+            this.lock.unlock();
         }
     }
 
-    public Message receive() throws InterruptedException {
-        lock.lock();
+    public Message receive() throws BufferException {
+        this.lock.lock();
         try {
-            while (buffer.isEmpty()) {
-                notEmpty.await();
-            }
-            return buffer.poll();
+            while (!this.isShutdown && this.buffer.isEmpty())
+                this.condition.awaitUninterruptibly();
+
+            if (this.isShutdown)
+                throw new BufferException("Buffer was shutdown");
+
+            return this.buffer.poll();
         } finally {
-            lock.unlock();
+            this.lock.unlock();
+        }
+    }
+
+    public void shutdown() {
+        this.lock.lock();
+        try {
+            if (this.isShutdown)
+                return;
+
+            this.isShutdown = true;
+            this.condition.signalAll();
+        } finally {
+            this.lock.unlock();
         }
     }
 }
