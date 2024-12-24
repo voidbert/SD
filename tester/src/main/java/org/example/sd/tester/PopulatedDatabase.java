@@ -16,9 +16,7 @@
 
 package org.example.sd.tester;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -67,10 +65,12 @@ public class PopulatedDatabase {
             .collect(Collectors.toSet());
     }
 
+    @Override
     public Object clone() {
         return new PopulatedDatabase(this);
     }
 
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -81,6 +81,7 @@ public class PopulatedDatabase {
             this.getValidValuesSet().equals(database.getValidValuesSet());
     }
 
+    @Override
     public String toString() {
         return String.format("PopulatedDatabase(database = %s, validKeys = %s, validValues = %s)",
                              this.database.toString(),

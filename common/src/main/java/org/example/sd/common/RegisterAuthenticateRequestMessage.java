@@ -55,6 +55,11 @@ public class RegisterAuthenticateRequestMessage extends Message {
     }
 
     @Override
+    public Object clone() {
+        return new RegisterAuthenticateRequestMessage(this);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -62,11 +67,6 @@ public class RegisterAuthenticateRequestMessage extends Message {
         RegisterAuthenticateRequestMessage message = (RegisterAuthenticateRequestMessage) o;
         return this.username.equals(message.getUsername()) &&
             this.password.equals(message.getPassword());
-    }
-
-    @Override
-    public Object clone() {
-        return new RegisterAuthenticateRequestMessage(this);
     }
 
     @Override

@@ -26,6 +26,7 @@ import org.example.sd.libserver.SimpleHashMapBackend;
 
 public class Server {
     public static void main(String[] args) throws IOException {
+        // Parse command-line arguments
         int        port           = 0;
         int        maxConnections = 0;
         KeyValueDB backend        = null;
@@ -59,6 +60,7 @@ public class Server {
             System.exit(1);
         }
 
+        // Serve requests
         DatabaseServer server = new DatabaseServer(port, maxConnections, backend);
         server.run();
     }

@@ -85,10 +85,12 @@ public class OperationDistribution {
             return Operation.GET;
     }
 
+    @Override
     public Object clone() {
         return new OperationDistribution(this);
     }
 
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -99,6 +101,7 @@ public class OperationDistribution {
             this.getWhen == dist.getGetWhen();
     }
 
+    @Override
     public String toString() {
         return String.format(
             "OperationDistribution(put = %f, get = %f, multiPut = %f, multiGet = %f, getWhen = %f)",

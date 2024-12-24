@@ -18,7 +18,6 @@ package org.example.sd.tester;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
@@ -313,12 +312,12 @@ public class Test {
         return this.operationBlockSize;
     }
 
+    @Override
     public Object clone() {
         return new Test(this);
     }
 
-    // Cannot safely override equals() due to lack of equals() method in AbstractIntegerDistribution
-
+    @Override
     public String toString() {
         return String.format(
             "Test(populator = %s, operationDistribution = %s, keyDistribution = %s, valueDistribution = %s, multiCountDistribution = %s, nThreads = %d, nOperations = %d, operationBlockSize = %d)",

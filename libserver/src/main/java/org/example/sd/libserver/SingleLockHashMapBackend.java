@@ -38,7 +38,7 @@ public abstract class SingleLockHashMapBackend implements KeyValueDB {
         this.lock                  = new ReentrantReadWriteLock();
         this.triggersDoneCondition = this.lock.writeLock().newCondition();
         this.unsignaledTriggers    = new HashSet<Long>();
-        this.map                   = new HashMap<>();
+        this.map                   = new HashMap<String, byte[]>();
     }
 
     public void put(String key, byte[] value) {
@@ -122,10 +122,12 @@ public abstract class SingleLockHashMapBackend implements KeyValueDB {
         }
     }
 
+    @Override
     public Object clone() {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -139,30 +141,17 @@ public abstract class SingleLockHashMapBackend implements KeyValueDB {
         }
     }
 
+    @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("{");
-
         this.lock.readLock().lock();
         try {
-            boolean isFirst = true;
-            for (Map.Entry<String, byte[]> entry : this.map.entrySet()) {
-                if (isFirst)
-                    isFirst = false;
-                else
-                    builder.append(", ");
-
-                builder.append(entry.getKey());
-                builder.append(": ");
-                builder.append(Arrays.toString(entry.getValue()));
-            }
-
+            return this.map.entrySet()
+                .stream()
+                .collect(Collectors.toMap(e -> e.getKey(), e -> Arrays.toString(e.getValue())))
+                .toString();
         } finally {
             this.lock.readLock().unlock();
         }
-
-        builder.append("}");
-        return builder.toString();
     }
 
     protected abstract void summonTriggersAfterPut(String key, byte[] value);

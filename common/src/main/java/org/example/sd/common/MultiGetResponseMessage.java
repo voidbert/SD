@@ -28,8 +28,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 
 public class MultiGetResponseMessage extends Message implements ResponseMessage {
-    private int                 requestId;
-    private Map<String, byte[]> map;
+    private final int requestId;
+    private final Map<String, byte[]> map;
 
     public MultiGetResponseMessage(int requestId, Map<String, byte[]> map) {
         this.requestId = requestId;
@@ -84,6 +84,11 @@ public class MultiGetResponseMessage extends Message implements ResponseMessage 
     }
 
     @Override
+    public Object clone() {
+        return new MultiGetResponseMessage(this);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -94,30 +99,9 @@ public class MultiGetResponseMessage extends Message implements ResponseMessage 
     }
 
     @Override
-    public Object clone() {
-        return new MultiGetResponseMessage(this);
-    }
-
-    @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("MultiGetResponseMessage(requestId = ");
-        builder.append(this.requestId);
-        builder.append(", map = {");
-
-        boolean isFirst = true;
-        for (Map.Entry<String, byte[]> entry : this.map.entrySet()) {
-            if (isFirst)
-                isFirst = false;
-            else
-                builder.append(", ");
-
-            builder.append(entry.getKey());
-            builder.append(": ");
-            builder.append(Arrays.toString(entry.getValue()));
-        }
-
-        builder.append("})");
-        return builder.toString();
+        return String.format("MultiGetResponseMessage(requestId=%d, map=%s)",
+                             this.requestId,
+                             this.getComparableMap());
     }
 }

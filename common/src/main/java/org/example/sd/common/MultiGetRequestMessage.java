@@ -23,8 +23,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class MultiGetRequestMessage extends Message {
-    private int         id;
-    private Set<String> keys;
+    private final int id;
+    private final Set<String> keys;
 
     public MultiGetRequestMessage(int id, Set<String> keys) {
         this.id   = id;
@@ -61,17 +61,17 @@ public class MultiGetRequestMessage extends Message {
     }
 
     @Override
+    public Object clone() {
+        return new MultiGetRequestMessage(this);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null || this.getClass() != o.getClass())
             return false;
 
         MultiGetRequestMessage message = (MultiGetRequestMessage) o;
         return this.id == message.getId() && this.keys.equals(message.getKeys());
-    }
-
-    @Override
-    public Object clone() {
-        return new MultiGetRequestMessage(this);
     }
 
     @Override

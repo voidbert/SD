@@ -65,10 +65,15 @@ public class DatabaseClient implements KeyValueDB {
         connectionReader.start();
     }
 
-    // NOT THREAD SAFE METHOD
+    // UNSAFE FOR MANY *EXTERNAL* THREADS TO USE AT ONCE
     public RegistrationAuthenticationStatus authenticate(String username, String password) {
-        if (this.authenticated)
-            throw new DatabaseClientException("Already authenticated");
+        this.lock.lock();
+        try {
+            if (this.authenticated)
+                throw new DatabaseClientException("Already authenticated");
+        } finally {
+            this.lock.unlock();
+        }
 
         Message reply = this.sendAndWaitForReply(
             i -> new RegisterAuthenticateRequestMessage(username, password));
@@ -135,6 +140,7 @@ public class DatabaseClient implements KeyValueDB {
     private Message sendAndWaitForReply(Function<Integer, Message> createMessage) {
         this.lock.lock();
         try {
+            // Create new message
             int     messageId = this.nextId++;
             Message request   = createMessage.apply(messageId);
             if (request.getClass() == RegisterAuthenticateRequestMessage.class)
@@ -144,6 +150,7 @@ public class DatabaseClient implements KeyValueDB {
                 request.getClass() != RegisterAuthenticateRequestMessage.class)
                 throw new DatabaseClientException("Not authenticated");
 
+            // Send and wait for reply
             request.serialize(this.out);
             this.out.flush();
             Condition waitCondition = this.conditions[messageId % this.conditions.length];
@@ -152,6 +159,7 @@ public class DatabaseClient implements KeyValueDB {
             while (!this.brokenConnection && (reply = this.replies.get(messageId)) == null)
                 waitCondition.awaitUninterruptibly();
 
+            // Handle reply
             if (reply == null)
                 throw new DatabaseClientException("Unable to receive response from server");
             this.replies.remove(messageId);
@@ -161,7 +169,7 @@ public class DatabaseClient implements KeyValueDB {
             for (Condition c : this.conditions)
                 c.signalAll();
 
-            throw new DatabaseClientException(e);
+            throw new DatabaseClientException(e.getClass().getSimpleName() + ": " + e.getMessage());
         } finally {
             this.lock.unlock();
         }
@@ -229,16 +237,12 @@ public class DatabaseClient implements KeyValueDB {
         }
     }
 
+    @Override
     public Object clone() {
-        // There's no way to clone an existing connection
-        return this;
+        return this; // This has to return a valid object, but it's impossible to clone a connection
     }
 
-    public boolean equals(Object o) {
-        // No two connections different connections can be the same
-        return this == o;
-    }
-
+    @Override
     public String toString() {
         return String.format("DatabaseClient(%s:%d)",
                              this.socket.getInetAddress().toString(),

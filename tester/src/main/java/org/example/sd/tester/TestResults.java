@@ -17,10 +17,8 @@
 package org.example.sd.tester;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
-import java.util.stream.Collectors;
 
 public class TestResults {
     private Map<Operation, Long>    operationSum;
@@ -58,10 +56,6 @@ public class TestResults {
         this.operationSumSquares.put(operation,
                                      this.operationSumSquares.get(operation) + time * time);
         this.operationCount.put(operation, this.operationCount.get(operation) + 1);
-    }
-
-    public void setTestTime(long testTime) {
-        this.testTime = testTime;
     }
 
     public void mergeWith(TestResults results) {
@@ -107,29 +101,32 @@ public class TestResults {
         }
     }
 
+    public void setTestTime(long testTime) {
+        this.testTime = testTime;
+    }
+
     public long getTestTime() {
         return this.testTime;
     }
 
     private Map<Operation, Long> getOperationSum() {
-        return this.operationSum.entrySet().stream().collect(
-            Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+        return new HashMap<Operation, Long>(this.operationSum);
     }
 
     private Map<Operation, Long> getOperationSumSquares() {
-        return this.operationSumSquares.entrySet().stream().collect(
-            Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+        return new HashMap<Operation, Long>(this.operationSumSquares);
     }
 
     private Map<Operation, Integer> getOperationCount() {
-        return this.operationCount.entrySet().stream().collect(
-            Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+        return new HashMap<Operation, Integer>(this.operationCount);
     }
 
+    @Override
     public Object clone() {
         return new TestResults(this);
     }
 
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -141,6 +138,7 @@ public class TestResults {
             this.testTime == results.getTestTime();
     }
 
+    @Override
     public String toString() {
         StringBuilder builder = new StringBuilder("TestResults(");
 

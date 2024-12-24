@@ -60,6 +60,7 @@ public class SimpleHashMapBackend extends SingleLockHashMapBackend {
         while (!Arrays.equals(this.map.get(keyCond), valueCond)) {
             this.databaseChangedCondition.awaitUninterruptibly();
 
+            // Signal end of trigger execution
             if (this.unsignaledTriggers.contains(threadId)) {
                 this.unsignaledTriggers.remove(threadId);
 
@@ -71,10 +72,12 @@ public class SimpleHashMapBackend extends SingleLockHashMapBackend {
         this.waitingTriggers.remove(threadId);
     }
 
+    @Override
     public Object clone() {
         return new SimpleHashMapBackend(this);
     }
 
+    @Override
     public String toString() {
         return "SimpleHashMapBackend(" + super.toString() + ")";
     }

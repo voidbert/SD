@@ -65,6 +65,11 @@ public class PutRequestMessage extends Message {
     }
 
     @Override
+    public Object clone() {
+        return new PutRequestMessage(this);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -72,11 +77,6 @@ public class PutRequestMessage extends Message {
         PutRequestMessage message = (PutRequestMessage) o;
         return this.id == message.getId() && this.key.equals(message.getValue()) &&
             Arrays.equals(this.value, message.getValue());
-    }
-
-    @Override
-    public Object clone() {
-        return new PutRequestMessage(this);
     }
 
     @Override

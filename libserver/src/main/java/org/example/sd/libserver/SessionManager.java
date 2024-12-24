@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class SessionManager {
@@ -30,7 +31,7 @@ public class SessionManager {
     private Map<String, String> passwords;
     private Queue<String>       waitingQueue;
     private Set<String>         activeClients;
-    private final ReentrantLock lock;
+    private final Lock          lock;
     private final Condition     sessionAvailable;
 
     public SessionManager(int maxSessions) {
@@ -52,9 +53,10 @@ public class SessionManager {
 
         this.lock.lock();
         try {
-            if (this.activeClients.contains(username))
+            if (this.activeClients.contains(username) || this.waitingQueue.contains(username))
                 throw new SessionException("User '" + username + "' is already authenticated.");
 
+            // Check password
             String truePassword = this.passwords.get(username);
             if (truePassword == null) {
                 this.passwords.put(username, password);
@@ -63,15 +65,15 @@ public class SessionManager {
                 throw new SessionException("Wrong password");
             }
 
-            if (!this.waitingQueue.contains(username))
-                this.waitingQueue.add(username);
-
+            // Wait for turn
+            this.waitingQueue.add(username);
             while (this.activeClients.size() >= this.maxSessions ||
                    !username.equals(this.waitingQueue.peek())) {
 
                 this.sessionAvailable.awaitUninterruptibly();
             }
 
+            // Login
             this.waitingQueue.poll();
             this.activeClients.add(username);
             return newUser;
@@ -107,10 +109,12 @@ public class SessionManager {
         }
     }
 
+    @Override
     public Object clone() {
         return new SessionManager(this);
     }
 
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -120,6 +124,7 @@ public class SessionManager {
             this.passwords.equals(sessions.getPasswords());
     }
 
+    @Override
     public String toString() {
         return String.format("SessionManager(maxSessions=%d, passwords=%s)",
                              this.maxSessions,

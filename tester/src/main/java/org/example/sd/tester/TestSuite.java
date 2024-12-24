@@ -107,6 +107,7 @@ public class TestSuite {
 
     private TestResults
         runTest(int nThreads, KeyValueDB backend, OperationDistribution operationDistribution) {
+
         final int nOperations        = operationDistribution.getGetWhen() > 0 ? 1 << 20 : 1 << 23;
         final int operationBlockSize = 4096;
         final int nKeys              = 128;
@@ -156,6 +157,7 @@ public class TestSuite {
         exportCSV(TestResults results, int nThreads, String distributionName, KeyValueDB backend)
             throws IOException {
 
+        // Determine filename
         String threadString = nThreads > 1 ? "threads" : "thread";
         String filename     = String.format("%s/%s_%s_%d_%s.csv",
                                         this.outputDirectory,
@@ -164,6 +166,7 @@ public class TestSuite {
                                         nThreads,
                                         threadString);
 
+        // Generate CSV contents
         StringBuilder fileContents = new StringBuilder("OPERATION,AVG,STDEV\n");
         for (Operation operation : Operation.values()) {
             if (operation != Operation.GET_WHEN) {
@@ -186,6 +189,7 @@ public class TestSuite {
             }
         }
 
+        // Export CSV
         PrintWriter out = new PrintWriter(filename);
         out.print(fileContents.toString());
         out.close();
@@ -235,18 +239,21 @@ public class TestSuite {
         System.out.printf("Exported %s\n", filename);
     }
 
+    @Override
     public Object clone() {
         return new TestSuite(this);
     }
 
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
 
         TestSuite suite = (TestSuite) o;
-        return this.outputDirectory == suite.getOutputDirectory();
+        return this.outputDirectory.equals(suite.getOutputDirectory());
     }
 
+    @Override
     public String toString() {
         return String.format("TestSuite(outputDirectory = %s)", this.outputDirectory);
     }

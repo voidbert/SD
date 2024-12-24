@@ -44,17 +44,17 @@ public class PutResponseMessage extends Message implements ResponseMessage {
     }
 
     @Override
+    public Object clone() {
+        return new PutResponseMessage(this);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
 
         PutResponseMessage message = (PutResponseMessage) o;
         return this.requestId == message.getRequestId();
-    }
-
-    @Override
-    public Object clone() {
-        return new PutResponseMessage(this);
     }
 
     @Override

@@ -24,8 +24,4 @@ public class DatabaseClientException extends RuntimeException {
     public DatabaseClientException(String message) {
         super(message);
     }
-
-    public DatabaseClientException(Throwable t) {
-        super(t);
-    }
 }

@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public class GetResponseMessage extends Message implements ResponseMessage {
-    private int    requestId;
-    private byte[] value;
+    private final int requestId;
+    private final byte[] value;
 
     public GetResponseMessage(int requestId, byte[] value) {
         this.requestId = requestId;
@@ -72,6 +72,11 @@ public class GetResponseMessage extends Message implements ResponseMessage {
     }
 
     @Override
+    public Object clone() {
+        return new GetResponseMessage(this);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -79,11 +84,6 @@ public class GetResponseMessage extends Message implements ResponseMessage {
         GetResponseMessage message = (GetResponseMessage) o;
         return this.requestId == message.getRequestId() &&
             Arrays.equals(this.value, message.getValue());
-    }
-
-    @Override
-    public Object clone() {
-        return new GetResponseMessage(this);
     }
 
     @Override

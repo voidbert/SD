@@ -192,16 +192,7 @@ public class DatabaseServer {
         }
     }
 
-    public Object clone() {
-        // It's impossible to clone a connection
-        return this;
-    }
-
-    public boolean equals(Object o) {
-        // No two connections different connections can be the same
-        return this == o;
-    }
-
+    @Override
     public String toString() {
         return String.format("DatabaseServer(backend=%s, port=%d)",
                              ((Object) this.backend).getClass().getSimpleName(),

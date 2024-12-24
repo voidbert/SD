@@ -27,6 +27,7 @@ public class Client {
     public static final int N_CONDITIONS = 32;
 
     public static void main(String[] args) {
+        // Parse command line arguments
         String address = "";
         int    port    = 0;
         try {
@@ -44,6 +45,7 @@ public class Client {
             System.exit(1);
         }
 
+        // Initialization
         DatabaseClient database = null;
         try {
             database = new DatabaseClient(address, port, Client.N_CONDITIONS);
@@ -55,6 +57,7 @@ public class Client {
         Scanner       scanner = new Scanner(System.in);
         CommandRunner runner  = new LoggerCommandRunner(database, "> ");
 
+        // Authentication
         while (!database.isAuthenticated()) {
             System.out.print("Username: ");
             if (!scanner.hasNextLine())
@@ -83,6 +86,7 @@ public class Client {
             }
         }
 
+        // Database requests
         System.out.print("> ");
         while (scanner.hasNextLine()) {
             String command = scanner.nextLine();

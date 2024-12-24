@@ -21,8 +21,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class GetRequestMessage extends Message {
-    private int    id;
-    private String key;
+    private final int    id;
+    private final String key;
 
     public GetRequestMessage(int id, String key) {
         this.id  = id;

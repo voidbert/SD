@@ -29,10 +29,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.example.sd.common.Buffer;
 
 public class ThreadPool {
-    private static final long TIME_BETWEEN_SHRINKS = 10_000_000_000L; // 30 seconds (in ns)
+    private static final long TIME_BETWEEN_SHRINKS = 30_000_000_000L; // 30 seconds (in ns)
 
-    Lock                         lock;
-    Condition                    condition;
+    private Lock                 lock;
+    private Condition            condition;
     private ArrayDeque<Runnable> buffer;
     private Map<Long, Thread>    threads;
     private Set<Long>            killedThreads;
@@ -75,6 +75,7 @@ public class ThreadPool {
         while (true) {
             Runnable runnable;
 
+            // Get task to run
             this.lock.lock();
             try {
                 if (processedOperation)
@@ -102,6 +103,7 @@ public class ThreadPool {
                 this.lock.unlock();
             }
 
+            // Run task
             try {
                 if (runnable != null) {
                     processedOperation = true;
@@ -125,20 +127,13 @@ public class ThreadPool {
                 it.remove();
                 i++;
             }
+
             this.lastShrink = time;
             this.condition.signalAll();
         }
     }
 
-    public Object clone() {
-        return new ThreadPool();
-    }
-
-    public boolean equals(Object o) {
-        // No two connections different connections can be the same
-        return this == o;
-    }
-
+    @Override
     public String toString() {
         return String.format("ThreadPool(nThreads=%d)", this.threads.size());
     }
