@@ -7,6 +7,7 @@
 \usepackage[a4paper, margin=2cm]{geometry}
 \usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage{longtable}
 
 \chardef\_=`_
 
@@ -61,33 +62,39 @@
 O \emph{software} desenvolvido foi dividido em componentes, que se apresentam na figura abaixo,
 juntamente com as dependências entre si:
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{dot/Architecture.eps}
-    \caption{Dependências entre os vários componentes da solução desenvolvida.}
-    \label{architecture}
-\end{figure}
+\begin{minipage}{0.5\textwidth}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{dot/Architecture.eps}
+        \caption{Dependências entre os vários componentes da solução desenvolvida.}
+        \label{architecture}
+    \end{figure}
+\end{minipage}
+\hspace{0.03\textwidth}
+\begin{minipage}{0.47\textwidth}
+    \setlength{\parskip}{\baselineskip}
+    \setlength{\parindent}{0pt}
+    A maioria da funcionalidade do \emph{software} está localizada nas bibliotecas \texttt{common} e
+    \texttt{libserver}:
 
-A maioria da funcionalidade do \emph{software} está localizada nas bibliotecas \texttt{common} e
-\texttt{libserver}:
-
-\begin{itemize}
-    \item \texttt{common}
     \begin{itemize}
-        \item Mensagens do protocolo de comunicação entre \texttt{client} e \texttt{server}, e a sua
-            serialização e deserialização;
+        \item \texttt{common}
+        \begin{itemize}
+            \item Mensagens do protocolo de comunicação entre \texttt{client} e \texttt{server}, e a
+                sua serialização e deserialização;
 
-        \item Lógica de comunicação do cliente.
+            \item Lógica de comunicação do cliente.
+        \end{itemize}
+
+        \item \texttt{libserver}
+        \begin{itemize}
+            \item Várias implementações da estrutura de armazenamento de dados (\emph{backends}),
+                com estratégias de controlo de concorrência distintas.
+
+            \item Lógica de comunicação do servidor.
+        \end{itemize}
     \end{itemize}
-
-    \item \texttt{libserver}
-    \begin{itemize}
-        \item Várias implementações da estrutura de armazenamento de dados (\emph{backends}), com
-            estratégias de controlo de concorrência distintas.
-
-        \item Lógica de comunicação do servidor.
-    \end{itemize}
-\end{itemize}
+\end{minipage}
 
 Os programas \texttt{client} e \texttt{server} não passam de \emph{wrappers} à volta das bibliotecas
 \texttt{common} e \texttt{libserver}, respetivamente. No programa \texttt{tester}, é implementada
@@ -150,6 +157,35 @@ resolvido com um \emph{lock} ao nível da coleção, mas testes empíricos mostr
 com que este \emph{backend} tivesse um desempenho semelhante aos \emph{backends} de \emph{lock}
 único apresentados.
 
+\section{Arquiteturas do cliente e do servidor}
+
+Na figura abaixo, observa-se uma representação das arquiteturas do cliente e do servidor da base de
+dados. No cliente, o envio de uma mensagem é feito por qualquer \emph{thread} da aplicação, através
+de uma escrita no \emph{socket}, cujo acesso é moderado por um \emph{lock}. Há uma \emph{thread}
+dedicada à exclusivamente à leitura de mensagens do servidor e à sua deserialização. Após um pedido,
+as \emph{threads} da aplicação bloqueiam numa variável de condição até obterem uma resposta do
+servidor, que é sinalizada pela \emph{thread} de receção de mensagens. Para diminuir o número de
+\emph{threads} sinalizadas, são inicialmente criadas várias variáveis de condição, e uma
+\emph{thread} escolhe a variável de condição onde bloquear de acordo com o identificador da mensagem
+enviada.
+
+Quanto ao servidor, uma \emph{thread} em cada conexão é responsável por deserializar os pedidos do
+cliente e despachá-los para uma \emph{thread pool}, que os executa. A \emph{thread pool}
+implementada regula o seu número de \emph{threads} para se ajustar ao volume de pedidos dos
+clientes. As \emph{threads} da \emph{thread pool}, após terminarem as operações na base de dados,
+respondem aos clientes, escrevendo em \emph{buffers} de mensagens, que são lidos por \emph{threads}
+de cada conexão, responsáveis apenas por escritas nos \emph{sockets}. Deste modo, é possível que o o
+resultado de um pedido de um cliente seja difundido por vários clientes, sem que clientes lentos
+bloqueiem a \emph{thread} na \emph{thread pool}. De momento, nenhum \emph{backend} tira proveito
+desta funcionalidade.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{res/ClientServer.eps}
+    \caption{Arquitetura \emph{multi-thread} do cliente e do servidor.}
+    \label{client-server-architecture}
+\end{figure}
+
 \section{Protocolo de comunicação entre um cliente e o servidor}
 
 \begin{minipage}{0.5\textwidth}
@@ -186,34 +222,6 @@ A serialização é feita com recurso às classes \texttt{Data[Input|Output]Stre
 multi-plataforma da linguagem Java, é possível a execução do cliente em diversos sistemas. Devido à
 documentação publicamente disponível das classes mencionadas, também é possível interagir com o
 servidor utilizando outras tecnologias (ex.: C).
-
-\section{Arquiteturas do cliente e do servidor}
-
-No cliente, o envio de uma mensagem é feito por qualquer \emph{thread} da aplicação, através de uma
-escrita no \emph{socket}, cujo acesso é moderado por um \emph{lock}. Há uma \emph{thread} dedicada à
-exclusivamente à leitura de mensagens do servidor e à sua deserialização. Após um pedido, as
-\emph{threads} da aplicação bloqueiam numa variável de condição até obterem uma resposta do
-servidor, que é sinalizada pela \emph{thread} de receção de mensagens. Para diminuir o número de
-\emph{threads} sinalizadas, são inicialmente criadas várias variáveis de condição, e uma
-\emph{thread} escolhe a variável de condição onde bloquear de acordo com o identificador da mensagem
-enviada.
-
-Quanto ao servidor, uma \emph{thread} em cada conexão é responsável por deserializar os pedidos do
-cliente e despachá-los para uma \emph{thread pool}, que os executa. A \emph{thread pool}
-implementada regula o seu número de \emph{threads} para se ajustar ao volume de pedidos dos
-clientes. As \emph{threads} da \emph{thread pool}, após terminarem as operações na base de dados,
-respondem aos clientes, escrevendo em \emph{buffers} de mensagens, que são lidos por \emph{threads}
-de cada conexão, responsáveis apenas por escritas nos \emph{sockets}. Deste modo, é possível que o o
-resultado de um pedido de um cliente seja difundido por vários clientes, sem que clientes lentos
-bloqueiem a \emph{thread} na \emph{thread pool}. De momento, nenhum \emph{backend} tira proveito
-desta funcionalidade.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{res/ClientServer.eps}
-    \caption{Arquitetura \emph{multi-thread} do cliente e do servidor.}
-    \label{client-server-architecture}
-\end{figure}
 
 \section{\emph{Framework} de testes}
 
@@ -259,7 +267,9 @@ Procurou-se testar o desempenho da base de dados desenvolvida em diversos cenár
 tirou-se proveito do elevadíssimo grau de configurabilidade da \emph{framework} de testes
 desenvolvida, e foram concebidos diferentes \emph{benchmarks}, descritos no anexo
 \ref{benckmark-description}, e executados num ambiente de execução descrito no anexo
-\ref{hardware-software-description}.
+\ref{hardware-software-description}. Testaram-se os \emph{backends} implementados diretamente, uma
+vez que a comunicação cliente-servidor adiciona apenas um tempo aproximadamente constante a cada
+medição, dificultando a comparação entre os \emph{backends}.
 
 \section{Conclusão}
 
@@ -288,11 +298,11 @@ desenvolvida, e foram concebidos diferentes \emph{benchmarks}, descritos no anex
 
 \begin{table}[H]
     \begin{center}
-        \begin{tabular}{|p{5cm}|c|c|c|}
+        \begin{tabular}{|m{5cm}|c|c|c|}
             \hline & Maioritariamente leituras & Equilibrado & Equilibrado c/ \texttt{getWhen} \\
 
-            \hline Número de chaves         & \multicolumn{3}{c|}{128}          \\
-            \hline Número de valores        & \multicolumn{3}{c|}{128}          \\
+            \hline Número de chaves         & \multicolumn{3}{c|}{1024}         \\
+            \hline Número de valores        & \multicolumn{3}{c|}{1024}         \\
             \hline Comprimento de uma chave & \multicolumn{3}{c|}{8 caracteres} \\
             \hline Comprimento de um valor  & \multicolumn{3}{c|}{8 octetos}    \\
 
@@ -321,8 +331,8 @@ desenvolvida, e foram concebidos diferentes \emph{benchmarks}, descritos no anex
     demorado caso fossem executadas 8 milhões de operações.
 }
 
-Os três \emph{backends} são testados, sendo que o \texttt{ShardedHashMapBackend} é inicializado com
-64 \emph{shards} e não é sujeito ao \emph{benchmark} "Equilibrado c/ \texttt{getWhen}"{}.
+Os três \emph{backends} foram testados, sendo que o \texttt{ShardedHashMapBackend} foi inicializado
+com 64 \emph{shards} e não foi sujeito ao \emph{benchmark} "Equilibrado c/ \texttt{getWhen}"{}.
 
 \subsection{\emph{Hardware} e \emph{software} utilizados para a execução dos \emph{benchmarks}}
 \label{hardware-software-description}
