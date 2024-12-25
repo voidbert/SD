@@ -366,6 +366,23 @@ pelo tempo de sucessivas trocas de contexto.
 
 \section{Conclusão}
 
+Com base nos os testes de desempenho realizados, conclui-se que a maioria do tempo de execução de
+cada operação tem origem no controlo de concorrência. O mesmo já poderia não ser verdade caso a
+base de dados fosse persistente, uma vez que operações em disco são várias ordens de grandeza mais
+demoradas do que operações em memória. É por este motivo que não foi benéfico, neste contexto,
+adicionar a operação \texttt{getWhen} ao \texttt{ShardedHashMapBackend}, mas isso poderia já ser
+viável caso a base de dados fosse persistente. Estes resultados justificam, por exemplo, o motivo
+pelo qual o motor de base de dados Redis, também chave-valor e em memória, serializa todos os
+acessos à base de dados, apesar de permitir I/O concorrente. \cite{redis}
+
+Consideramos ter cumprido em pleno os requisitos do enunciado do trabalho prático. No entanto, temos
+ideias de como melhorar projeto desenvolvido. Além de preocupações com a qualidade de código e
+documentação, há formas de melhorar o conteúdo do projeto. A título de exemplo, apesar do servidor
+permitir difusão de mensagens a vários clientes, nenhum \emph{backend} tira proveito desta
+funcionalidade. Um possível \emph{backend} poderia não bloquear em operações \texttt{getWhen}, sendo
+as respostas a estes pedidos enviadas quando uma escrita é feita na base de dados. Deste modo, não
+seriam necessárias \emph{threads} do servidor bloqueadas em operações \texttt{getWhen}.
+
 \section{Bibliografia}
 \def\refname{}
 \vspace{-1.5cm}
@@ -382,6 +399,11 @@ pelo tempo de sucessivas trocas de contexto.
     \bibitem{apache-xml-graphics}
         The Apache Software Foundation. "Apache FOP."{} The Apache XML Graphics Project. Accessed:
         Dec. 20, 2024. [Online.] Available: \url{https://xmlgraphics.apache.org/fop/}
+
+    \bibitem{redis}
+        Alibaba Clouder. "Improving Redis Performance through Multi-Thread Processing."{}.
+        Alibaba Cloud. Accessed: Dec. 25, 2024. [Online.] Available:
+        \url{https://www.alibabacloud.com/blog/improving-redis-performance-through-multi-thread-processing_594150}
 \end{thebibliography}
 
 \section{Anexos}
