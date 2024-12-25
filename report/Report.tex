@@ -125,10 +125,10 @@ operações \texttt{getWhen} (\emph{threads} no início das operações \texttt{
 Este \emph{backend} é muito semelhante ao anterior, com a diferença de que são utilizadas mais
 variáveis de condição relativas à alteração da base de dados, para uma maior granularidade na
 sinalização de \emph{threads}. As operações \texttt{getWhen}, no seu início, criam, caso não exista,
-uma variável de condição associada á atualização da sua chave, pela qual esperam, e as operações
+uma variável de condição associada à atualização da sua chave, pela qual esperam, e as operações
 \texttt{put} e \texttt{multiPut} sinalizam apenas as \emph{threads} à espera de variáveis de
-condição associadas às chaves que modificam. A execução de uma operação \texttt{getWhen} também
-exige a destruição de uma variável de condição caso não haja mais \emph{threads} dela dependentes.
+condição associadas às chaves modificadas. A execução de uma operação \texttt{getWhen} também exige
+a destruição de uma variável de condição caso não haja mais \emph{threads} dela dependentes.
 
 Uma abordagem alternativa que evita a criação de novas variáveis de condição foi considerada. Esta
 envolve a criação inicial de $N$ variáveis de condição, às quais as chaves se associam pela sua
@@ -182,7 +182,7 @@ desta funcionalidade.
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{res/ClientServer.eps}
-    \caption{Arquitetura \emph{multi-thread} do cliente e do servidor.}
+    \caption{Arquiteturas \emph{multi-thread} do cliente e do servidor.}
     \label{client-server-architecture}
 \end{figure}
 
@@ -196,8 +196,8 @@ desta funcionalidade.
     cliente e o servidor. Não são representados segmentos da camada de transporte (TCP).
 
     As duas primeiras mensagens permitem a autenticação do cliente: o cliente pede a sua
-    autenticação / registo, e espera que o servidor responda (a autorizar o cliente ou a reportar
-    credenciais incorretas).
+    autenticação / registo, e espera que o servidor responda (a autorizar o cliente ou a reportar um
+    erro).
 
     As restantes mensagens correspondem a pedidos do cliente para realizar operações na base de
     dados, e às respostas do servidor, pelas quais o cliente aguarda. É de notar que todos os
@@ -219,9 +219,9 @@ desta funcionalidade.
 \end{minipage}
 
 A serialização é feita com recurso às classes \texttt{Data[Input|Output]Stream}. Devido à natureza
-multi-plataforma da linguagem Java, é possível a execução do cliente em diversos sistemas. Devido à
-documentação publicamente disponível das classes mencionadas, também é possível interagir com o
-servidor utilizando outras tecnologias (ex.: C).
+multi-plataforma da linguagem Java, é possível a execução do cliente em diversos sistemas. Ademais,
+devido à documentação publicamente disponível das classes mencionadas, também é possível interagir
+com o servidor utilizando outras tecnologias (ex.: C).
 
 \section{\emph{Framework} de testes}
 
@@ -268,8 +268,101 @@ tirou-se proveito do elevadíssimo grau de configurabilidade da \emph{framework}
 desenvolvida, e foram concebidos diferentes \emph{benchmarks}, descritos no anexo
 \ref{benckmark-description}, e executados num ambiente de execução descrito no anexo
 \ref{hardware-software-description}. Testaram-se os \emph{backends} implementados diretamente, uma
-vez que a comunicação cliente-servidor adiciona apenas um tempo aproximadamente constante a cada
-medição, dificultando a comparação entre os \emph{backends}.
+vez que a comunicação cliente-servidor apenas adiciona um tempo aproximadamente constante a cada
+medição, nada revelando e dificultando a comparação entre os \emph{backends}.
+
+Abaixo, observam-se os tempos médios de execução das operações envolvidas no \emph{benchmark}
+"Maioritariamente leituras"{}. Para qualquer operação e número de \emph{threads}, o desempenho dos
+\emph{backends} de \emph{lock} único é aproximadamente igual, visto que o \emph{overhead} do
+controlo de concorrência é o mesmo (aquisição de um \emph{lock} de escrita / leitura conforme a
+operação). No entanto, o mesmo não é verdade para o \texttt{ShardedHashMapBackend}. Com uma
+\emph{thread}, a necessidade de aquisição de vários \emph{locks} em operações \texttt{multiPut}
+resulta num maior tempo de execução de cada operação. No entanto, com o aumento do número de
+\emph{threads}, a granularidade dos \emph{locks} reduz a contenção, permitindo que as operações de
+todos os tipos sejam menos demoradas. Neste \emph{backend}, a partir de 4 \emph{threads}, para
+operações \texttt{multiGet}, o \emph{overhead} de controlo de concorrência é compensado pela menor
+contenção.
+
+\begin{longtable}{m{0.30\textwidth}m{0.30\textwidth}m{0.30\textwidth}}
+    \includegraphics[width=0.30\textwidth]{autogen/Maioritariamente_leituras_1_thread.eps} &
+    \includegraphics[width=0.30\textwidth]{autogen/Maioritariamente_leituras_2_threads.eps} &
+    \includegraphics[width=0.30\textwidth]{autogen/Maioritariamente_leituras_4_threads.eps} \\
+    \includegraphics[width=0.30\textwidth]{autogen/Maioritariamente_leituras_8_threads.eps} &
+    \includegraphics[width=0.30\textwidth]{autogen/Maioritariamente_leituras_16_threads.eps} &
+    \stepcounter{figure}Figura \thefigure:
+        Tempos médios de execução das diversas operações nos diversos \emph{backends}, para o
+        \emph{benchmark} "Maioritariamente leituras"{}.
+\end{longtable}
+
+No \emph{benchmark} "Equilibrado"{}, a situação é semelhante à anterior. O
+\texttt{ShardedHashMapBackend} apresenta um maior \emph{overhead} no controlo de concorrência em
+operações que envolvem várias chaves, mas que é compensado por uma menor contenção quando uma
+segunda \emph{thread} é introduzida. A partir de quatro \emph{threads}, nos \emph{backends} de
+\emph{lock} único, observa-se que as operações \texttt{get} são mais demoradas que as \texttt{put}.
+Isto deve-se à injustiça dos \emph{locks} de leitura e escrita utilizados que, em combinação com uma
+maior competição entre leituras e escritas, dificulta que várias operações de leitura sejam
+executadas em paralelo. Configurar estes \emph{locks} como justos elimina esta discrepância entre
+leituras e escritas, mas origina tempos de execução cerca de três vezes maiores para ambas as
+operações, pelo que se optou por manter os \emph{locks} injustos na implementação dos
+\emph{backends}.
+
+\begin{longtable}{m{0.30\textwidth}m{0.30\textwidth}m{0.30\textwidth}}
+    \includegraphics[width=0.30\textwidth]{autogen/Equilibrado_1_thread.eps} &
+    \includegraphics[width=0.30\textwidth]{autogen/Equilibrado_2_threads.eps} &
+    \includegraphics[width=0.30\textwidth]{autogen/Equilibrado_4_threads.eps} \\
+    \includegraphics[width=0.30\textwidth]{autogen/Equilibrado_8_threads.eps} &
+    \includegraphics[width=0.30\textwidth]{autogen/Equilibrado_16_threads.eps} &
+    \stepcounter{figure}Figura \thefigure:
+        Tempos médios de execução das diversas operações nos diversos \emph{backends}, para o
+        \emph{benchmark} "Equilibrado"{}.
+\end{longtable}
+
+Como mostram os gráficos abaixo, quando são executadas operações \texttt{getWhen} em duas
+\emph{threads} ou menos, os \emph{backends} de \emph{lock} único apresentam sensivelmente o mesmo
+desempenho, visto que o maior \emph{overhead} do controlo de concorrência do último \emph{backend}
+nega as suas vantagens. No entanto, quando o número de \emph{threads} aumenta, o uso de variáveis de
+condição de maior granularidade diminui o tempo de execução das operações de escrita, visto que
+estas devem aguardar pelo término da execução dos \emph{triggers} (verificações de condições de
+operações \texttt{getWhen}), e estes surgem em menor número. Também se observam melhorias, embora
+menores, nos tempos das operações de leitura, visto que o menor número de \emph{triggers} a executar
+faz com que o \emph{lock} para leitura possa ser adquirido, em média, mais rapidamente.
+
+\begin{longtable}{m{0.30\textwidth}m{0.30\textwidth}m{0.30\textwidth}}
+    \includegraphics[width=0.30\textwidth]{autogen/Equilibrado_com_getWhen_1_thread.eps} &
+    \includegraphics[width=0.30\textwidth]{autogen/Equilibrado_com_getWhen_2_threads.eps} &
+    \includegraphics[width=0.30\textwidth]{autogen/Equilibrado_com_getWhen_4_threads.eps} \\
+    \includegraphics[width=0.30\textwidth]{autogen/Equilibrado_com_getWhen_8_threads.eps} &
+    \includegraphics[width=0.30\textwidth]{autogen/Equilibrado_com_getWhen_16_threads.eps} &
+    \stepcounter{figure}Figura \thefigure:
+        Tempos médios de execução das diversas operações nos \emph{backends} que suportam operações
+        \texttt{getWhen}, para o \emph{benchmark} "Equilibrado com getWhen"{}.
+\end{longtable}
+
+Como esperado, e como se observa nos gráficos acima, o tempo médio de cada operação aumenta com o
+número de \emph{threads}, visto que cada \emph{thread} fica bloqueada em \emph{locks} por mais
+tempo. No entanto, o que se procura avaliar é o desempenho total de um \emph{backend}, influenciado
+tanto pelo número de \emph{threads} como pela duração de cada operação. Logo, apresenta-se abaixo a
+duração de cada teste de acordo com as variáveis que a influenciam. Com a introdução de uma segunda
+\emph{thread}, nos \emph{backends} de \emph{lock} único, apenas se verificam melhorias de desempenho
+no \emph{benchmark} "Maioritariamente leituras"{}, visto que estas podem ocorrer em paralelo nestes
+\emph{backends}, mas o mesmo já não é verdade para escritas. Com o \texttt{ShardedHashMapBackend},
+como as operações de escrita realizadas não exigem a aquisição de um \emph{lock} sobre a totalidade
+da base de dados, o melhor desempenho obtém-se para 4 \emph{threads} em ambos os \emph{benchmarks}.
+A partir de 4 / 8 \emph{threads}, observa-se, de um modo geral, degradação do desempenho, uma vez
+que é a partir deste ponto que se torna impossível haver afinidade das \emph{threads} de
+\emph{software} às \emph{threads} físicas do processador utilizado, sendo o desempenho prejudicado
+pelo tempo de sucessivas trocas de contexto.
+
+\begin{figure}[H]
+    \centering
+    \begin{longtable}{m{0.45\textwidth}m{0.45\textwidth}}
+        \includegraphics[width=0.45\textwidth]{autogen/Maioritariamente_leituras.eps} &
+        \includegraphics[width=0.45\textwidth]{autogen/Equilibrado.eps}
+    \end{longtable}
+    \caption{Duração dos testes dependendo do \emph{benchmark}, \emph{backend} e número de
+        \emph{threads} escolhidos.}
+    \label{time-graphs}
+\end{figure}
 
 \section{Conclusão}
 
