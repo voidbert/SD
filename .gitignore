@@ -1,2 +1,8 @@
+# Java
 .gradle
 build
+
+# LaTeX
+report/dot/*.eps
+report/uml/*.eps
+*-eps-converted-to.pdf
