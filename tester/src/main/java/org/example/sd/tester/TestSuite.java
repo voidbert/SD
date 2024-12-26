@@ -110,8 +110,8 @@ public class TestSuite {
 
         final int nOperations        = operationDistribution.getGetWhen() > 0 ? 1 << 20 : 1 << 23;
         final int operationBlockSize = 4096;
-        final int nKeys              = 128;
-        final int nValues            = 128;
+        final int nKeys              = 1024;
+        final int nValues            = 1024;
         final int keyLength          = 8;
         final int valueLength        = 8;
 
@@ -232,8 +232,8 @@ public class TestSuite {
         FileOutputStream      stream = new FileOutputStream(new File(filename));
         EPSDocumentGraphics2D g      = new EPSDocumentGraphics2D(false);
         g.setGraphicContext(new GraphicContext());
-        g.setupDocument(stream, 800, 400);
-        chart.draw(g, new Rectangle2D.Double(0, 0, 800, 400));
+        g.setupDocument(stream, 500, 400);
+        chart.draw(g, new Rectangle2D.Double(0, 0, 500, 400));
         stream.close();
 
         System.out.printf("Exported %s\n", filename);
