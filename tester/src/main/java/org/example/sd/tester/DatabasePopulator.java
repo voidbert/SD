@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.example.sd.common.KeyValueDB;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 
 public class DatabasePopulator {
     private final KeyValueDB empty;
@@ -59,15 +60,8 @@ public class DatabasePopulator {
     private String[] generateValidKeys() {
         Set<String> ret = new HashSet<String>();
 
-        while (ret.size() < this.nKeys) {
-            String        chars   = "ABCDEFGHIJKLMONQRSTUVWXYZabcdefghijklmonqrstuvwxyz0123456789";
-            StringBuilder builder = new StringBuilder();
-
-            while (builder.length() < this.keyLength)
-                builder.append(chars.charAt(this.random.nextInt(chars.length())));
-
-            ret.add(builder.toString());
-        }
+        while (ret.size() < this.nKeys)
+            ret.add(RandomStringUtils.randomAlphanumeric(this.keyLength));
 
         return ret.stream().toArray(String[] ::new);
     }
