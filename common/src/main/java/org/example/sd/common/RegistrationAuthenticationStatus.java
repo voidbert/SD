@@ -18,14 +18,20 @@ package org.example.sd.common;
 
 public enum RegistrationAuthenticationStatus {
     SUCCESS,
-    WRONG_CREDENTIALS;
+    SUCCESS_NEW_USER,
+    WRONG_CREDENTIALS,
+    EXISTING_LOGIN;
 
     public int toInt() {
         switch (this) {
             case SUCCESS:
                 return 0;
-            case WRONG_CREDENTIALS:
+            case SUCCESS_NEW_USER:
                 return 1;
+            case WRONG_CREDENTIALS:
+                return 2;
+            case EXISTING_LOGIN:
+                return 3;
             default:
                 return -1; // Unreachable
         }
@@ -36,7 +42,11 @@ public enum RegistrationAuthenticationStatus {
             case 0:
                 return SUCCESS;
             case 1:
+                return SUCCESS_NEW_USER;
+            case 2:
                 return WRONG_CREDENTIALS;
+            case 3:
+                return EXISTING_LOGIN;
             default:
                 return null;
         }

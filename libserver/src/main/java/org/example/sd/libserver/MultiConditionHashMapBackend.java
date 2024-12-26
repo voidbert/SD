@@ -61,6 +61,7 @@ public class MultiConditionHashMapBackend extends SingleLockHashMapBackend {
     protected void getWhenWait(String keyCond, byte[] valueCond) {
         long threadId = Thread.currentThread().threadId();
 
+        // Add current thread to set of waiting threads
         Set<Long> keyWaitingThreads = this.waitingTriggers.get(keyCond);
         if (keyWaitingThreads == null) {
             keyWaitingThreads = new HashSet<Long>();
@@ -69,10 +70,12 @@ public class MultiConditionHashMapBackend extends SingleLockHashMapBackend {
         }
         keyWaitingThreads.add(threadId);
 
+        // Wait for the database to change
         Condition waitCondition = this.databaseChangedConditions.get(keyCond);
         while (!Arrays.equals(this.map.get(keyCond), valueCond)) {
             waitCondition.awaitUninterruptibly();
 
+            // Signal end of trigger execution
             if (this.unsignaledTriggers.contains(threadId)) {
                 this.unsignaledTriggers.remove(threadId);
 
@@ -81,6 +84,7 @@ public class MultiConditionHashMapBackend extends SingleLockHashMapBackend {
             }
         }
 
+        // Waiting threads cleanup
         keyWaitingThreads.remove(threadId);
         if (keyWaitingThreads.size() == 0) {
             this.databaseChangedConditions.remove(keyCond);
@@ -88,10 +92,12 @@ public class MultiConditionHashMapBackend extends SingleLockHashMapBackend {
         }
     }
 
+    @Override
     public Object clone() {
         return new MultiConditionHashMapBackend(this);
     }
 
+    @Override
     public String toString() {
         return "MultiConditionHashMapBackend(" + super.toString() + ")";
     }

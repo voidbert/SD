@@ -21,41 +21,107 @@ import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 public class Buffer {
-    private final Queue<Message> buffer;
-    private final Lock           lock;
-    private final Condition      notEmpty;
+    private Queue<Message>  buffer;
+    private final Lock      lock;
+    private final Condition condition;
+    private boolean         isShutdown;
 
     public Buffer() {
-        this.buffer   = new ArrayDeque<>();
-        this.lock     = new ReentrantLock();
-        this.notEmpty = lock.newCondition();
+        this.buffer     = new ArrayDeque<Message>();
+        this.lock       = new ReentrantLock();
+        this.condition  = this.lock.newCondition();
+        this.isShutdown = false;
     }
 
-    public void send(Message message) {
-        lock.lock();
+    public Buffer(Buffer buffer) {
+        this();
+        this.buffer = buffer.getBuffer();
+    }
+
+    public void send(Message message) throws BufferException {
+        this.lock.lock();
         try {
-            if (buffer.isEmpty()) {
-                buffer.add(message);
-                notEmpty.signal();
+            if (this.isShutdown)
+                throw new BufferException("Buffer was shutdown");
+
+            if (this.buffer.isEmpty()) {
+                this.buffer.add(message);
+                this.condition.signal();
             } else {
-                buffer.add(message);
+                this.buffer.add(message);
             }
         } finally {
-            lock.unlock();
+            this.lock.unlock();
         }
     }
 
-    public Message receive() throws InterruptedException {
-        lock.lock();
+    public Message receive() throws BufferException {
+        this.lock.lock();
         try {
-            while (buffer.isEmpty()) {
-                notEmpty.await();
-            }
-            return buffer.poll();
+            while (!this.isShutdown && this.buffer.isEmpty())
+                this.condition.awaitUninterruptibly();
+
+            if (this.isShutdown)
+                throw new BufferException("Buffer was shutdown");
+
+            return this.buffer.poll();
         } finally {
-            lock.unlock();
+            this.lock.unlock();
+        }
+    }
+
+    public void shutdown() {
+        this.lock.lock();
+        try {
+            if (this.isShutdown)
+                return;
+
+            this.isShutdown = true;
+            this.condition.signalAll();
+        } finally {
+            this.lock.unlock();
+        }
+    }
+
+    public Queue<Message> getBuffer() {
+        this.lock.lock();
+        try {
+            return new ArrayDeque<Message>(
+                this.buffer.stream().map(m -> (Message) m.clone()).collect(Collectors.toList()));
+        } finally {
+            this.lock.unlock();
+        }
+    }
+
+    @Override
+    public Object clone() {
+        return new Buffer(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || this.getClass() != o.getClass())
+            return false;
+
+        Buffer buffer = (Buffer) o;
+        this.lock.lock();
+        try {
+            return this.buffer.equals(buffer.getBuffer());
+        } finally {
+            this.lock.unlock();
+        }
+    }
+
+    @Override
+    public String toString() {
+        this.lock.lock();
+        try {
+            return "Buffer(" + this.buffer.toString() + ")";
+        } finally {
+            this.lock.unlock();
         }
     }
 }

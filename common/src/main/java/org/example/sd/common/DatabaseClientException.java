@@ -14,31 +14,14 @@
  * limitations under the License.
  */
 
-plugins {
-    java
-    application
-}
+package org.example.sd.common;
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation("org.apache.commons:commons-lang3:3.17.0")
-
-    implementation(project(":common"))
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+public class DatabaseClientException extends RuntimeException {
+    public DatabaseClientException() {
+        super();
     }
-}
 
-application {
-    mainClass = "org.example.sd.client.Client"
-}
-
-tasks.named<JavaExec>("run") {
-    standardInput = System.`in`
+    public DatabaseClientException(String message) {
+        super(message);
+    }
 }

@@ -49,17 +49,17 @@ public class RegisterAuthenticateResponseMessage extends Message {
     }
 
     @Override
+    public Object clone() {
+        return new RegisterAuthenticateResponseMessage(this);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
 
         RegisterAuthenticateResponseMessage message = (RegisterAuthenticateResponseMessage) o;
         return this.status.equals(message.getStatus());
-    }
-
-    @Override
-    public Object clone() {
-        return new RegisterAuthenticateResponseMessage(this);
     }
 
     @Override

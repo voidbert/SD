@@ -82,6 +82,11 @@ public class MultiPutRequestMessage extends Message {
     }
 
     @Override
+    public Object clone() {
+        return new MultiPutRequestMessage(this);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -92,30 +97,9 @@ public class MultiPutRequestMessage extends Message {
     }
 
     @Override
-    public Object clone() {
-        return new MultiPutRequestMessage(this);
-    }
-
-    @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("MultiPutRequestMessage(id = ");
-        builder.append(this.id);
-        builder.append(", map = {");
-
-        boolean isFirst = true;
-        for (Map.Entry<String, byte[]> entry : this.map.entrySet()) {
-            if (isFirst)
-                isFirst = false;
-            else
-                builder.append(", ");
-
-            builder.append(entry.getKey());
-            builder.append(": ");
-            builder.append(Arrays.toString(entry.getValue()));
-        }
-
-        builder.append("})");
-        return builder.toString();
+        return String.format("MultiPutResponseMessage(id=%d, map=%s)",
+                             this.id,
+                             this.getComparableMap());
     }
 }

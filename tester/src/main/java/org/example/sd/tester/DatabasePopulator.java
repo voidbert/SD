@@ -120,10 +120,12 @@ public class DatabasePopulator {
         return this.valueLength;
     }
 
+    @Override
     public Object clone() {
         return new DatabasePopulator(this);
     }
 
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -134,6 +136,7 @@ public class DatabasePopulator {
             this.valueLength == populator.getValueLength();
     }
 
+    @Override
     public String toString() {
         return String.format(
             "DatabasePopulator(empty = %s, nKeys = %d, nValues = %d, keyLength = %d, valueLength = %d)",

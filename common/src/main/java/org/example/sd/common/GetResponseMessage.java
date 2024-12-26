@@ -21,13 +21,16 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class GetResponseMessage extends Message {
-    private int    requestId;
-    private byte[] value;
+public class GetResponseMessage extends Message implements ResponseMessage {
+    private final int requestId;
+    private final byte[] value;
 
     public GetResponseMessage(int requestId, byte[] value) {
         this.requestId = requestId;
-        this.value     = value.clone();
+        if (value == null)
+            this.value = null;
+        else
+            this.value = value.clone();
     }
 
     public GetResponseMessage(GetResponseMessage message) {
@@ -63,7 +66,14 @@ public class GetResponseMessage extends Message {
     }
 
     public byte[] getValue() {
+        if (this.value == null)
+            return null;
         return this.value.clone();
+    }
+
+    @Override
+    public Object clone() {
+        return new GetResponseMessage(this);
     }
 
     @Override
@@ -74,11 +84,6 @@ public class GetResponseMessage extends Message {
         GetResponseMessage message = (GetResponseMessage) o;
         return this.requestId == message.getRequestId() &&
             Arrays.equals(this.value, message.getValue());
-    }
-
-    @Override
-    public Object clone() {
-        return new GetResponseMessage(this);
     }
 
     @Override

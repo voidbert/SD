@@ -129,7 +129,7 @@ public class ShardedHashMapBackend implements KeyValueDB {
     }
 
     public byte[] getWhen(String key, String keyCond, byte[] valueCond) {
-        throw new UnsupportedOperationException("Choose another backend");
+        throw new UnsupportedOperationException("getWhen not supported: choose another backend");
     }
 
     private Map<Integer, List<String>> associateKeysToShards(Set<String> keys) {
@@ -172,10 +172,12 @@ public class ShardedHashMapBackend implements KeyValueDB {
         return ret;
     }
 
+    @Override
     public Object clone() {
         return new ShardedHashMapBackend(this);
     }
 
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -203,34 +205,23 @@ public class ShardedHashMapBackend implements KeyValueDB {
         return true;
     }
 
+    @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("{");
-
-        boolean isFirst            = true;
-        int     acquiredLocksCount = 0;
+        Map<String, String> retMap             = new HashMap<String, String>();
+        int                 acquiredLocksCount = 0;
         try {
             for (int i = 0; i < this.nShards; ++i) {
                 this.locks[i].readLock().lock();
                 acquiredLocksCount++;
 
-                for (Map.Entry<String, byte[]> entry : this.shards[i].entrySet()) {
-                    if (isFirst)
-                        isFirst = false;
-                    else
-                        builder.append(", ");
-
-                    builder.append(entry.getKey());
-                    builder.append(": ");
-                    builder.append(Arrays.toString(entry.getValue()));
-                }
+                for (Map.Entry<String, byte[]> entry : this.shards[i].entrySet())
+                    retMap.put(entry.getKey(), Arrays.toString(entry.getValue()));
             }
         } finally {
             for (int i = 0; i < acquiredLocksCount; ++i)
                 this.locks[i].readLock().unlock();
         }
 
-        builder.append("}");
-        return builder.toString();
+        return "ShardedHashMapBackend(" + retMap.toString() + ")";
     }
 }

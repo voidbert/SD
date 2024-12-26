@@ -22,10 +22,10 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public class GetWhenRequestMessage extends Message {
-    private int    id;
-    private String key;
-    private String keyCond;
-    private byte[] valueCond;
+    private final int    id;
+    private final String key;
+    private final String keyCond;
+    private final byte[] valueCond;
 
     public GetWhenRequestMessage(int id, String key, String keyCond, byte[] valueCond) {
         this.id        = id;
@@ -74,6 +74,11 @@ public class GetWhenRequestMessage extends Message {
     }
 
     @Override
+    public Object clone() {
+        return new GetWhenRequestMessage(this);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == null || o.getClass() != this.getClass())
             return false;
@@ -82,11 +87,6 @@ public class GetWhenRequestMessage extends Message {
         return this.id == message.getId() && this.key.equals(message.getKey()) &&
             this.keyCond.equals(message.getKeyCond()) &&
             Arrays.equals(this.valueCond, message.getValueCond());
-    }
-
-    @Override
-    public Object clone() {
-        return new GetWhenRequestMessage(this);
     }
 
     @Override

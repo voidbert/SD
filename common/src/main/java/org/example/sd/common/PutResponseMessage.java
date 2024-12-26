@@ -19,51 +19,28 @@ package org.example.sd.common;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
-public class PutResponseMessage extends Message {
-    private int    requestId;
-    private byte[] value;
+public class PutResponseMessage extends Message implements ResponseMessage {
+    private int requestId;
 
-    public PutResponseMessage(int requestId, byte[] value) {
+    public PutResponseMessage(int requestId) {
         this.requestId = requestId;
-        this.value     = value.clone();
     }
 
     public PutResponseMessage(PutResponseMessage message) {
-        this(message.getRequestId(), message.getValue());
+        this(message.getRequestId());
     }
 
     public static PutResponseMessage messageDeserialize(DataInputStream in) throws IOException {
-        int    requestId = in.readInt();
-        byte[] value     = new byte[in.readInt()];
-        in.readFully(value);
-
-        return new PutResponseMessage(requestId, value);
+        return new PutResponseMessage(in.readInt());
     }
 
     protected void messageSerialize(DataOutputStream out) throws IOException {
         out.writeInt(requestId);
-        out.write(value.length);
-        out.write(value);
     }
 
     public int getRequestId() {
         return this.requestId;
-    }
-
-    public byte[] getValue() {
-        return this.value.clone();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || o.getClass() != this.getClass())
-            return false;
-
-        PutResponseMessage message = (PutResponseMessage) o;
-        return this.requestId == message.getRequestId() &&
-            Arrays.equals(this.value, message.getValue());
     }
 
     @Override
@@ -72,9 +49,16 @@ public class PutResponseMessage extends Message {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != this.getClass())
+            return false;
+
+        PutResponseMessage message = (PutResponseMessage) o;
+        return this.requestId == message.getRequestId();
+    }
+
+    @Override
     public String toString() {
-        return String.format("PutResponseMessage(id=%d, value=%s)",
-                             this.requestId,
-                             Arrays.toString(this.value));
+        return String.format("PutResponseMessage(id=%d)", this.requestId);
     }
 }

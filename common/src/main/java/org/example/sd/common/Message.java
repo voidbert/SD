@@ -20,7 +20,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -72,5 +71,6 @@ public abstract class Message {
         this.messageSerialize(out);
     }
 
+    public abstract Object  clone();
     protected abstract void messageSerialize(DataOutputStream out) throws IOException;
 }

@@ -16,8 +16,12 @@
 
 package org.example.sd.common;
 
-public class Common {
-    public final static String SERVER_MESSAGE = "Hello, I am the server!";
-    public final static String CLIENT_MESSAGE = "Hello, I am the client!";
-    public final static String TESTER_MESSAGE = "Hello, I am the tester!";
+public class BufferException extends Exception {
+    public BufferException() {
+        super();
+    }
+
+    public BufferException(String message) {
+        super(message);
+    }
 }
