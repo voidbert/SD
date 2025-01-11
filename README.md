@@ -3,6 +3,8 @@
 UMinho's Distributed Systems 2024/25 assignment. See [Assignment.pdf](Assignment.pdf) for more
 details.
 
+**Grade**: 19.8 / 20.0 :star:
+
 ### Authors
 
  - Carolina Pereira (A100836)
