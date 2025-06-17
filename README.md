@@ -1,7 +1,10 @@
 # SD
 
-UMinho's Distributed Systems 2024/25 assignment. See [Assignment.pdf](Assignment.pdf) for more
-details.
+A parallel key-value database. UMinho's Distributed Systems 2024/25 assignment. See
+[Assignment.pdf](Assignment.pdf) for more details.
+
+![Client and server architecture](report/res/ClientServer.svg)
+![Database backend result comparison (4 threads)](report/autogen/Equilibrado_4_threads.svg)
 
 **Grade**: 19.8 / 20.0 :star:
 
